@@ -1,0 +1,54 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Features - Copy %282%29\**" />
+    <Compile Remove="Features - Copy %283%29\**" />
+    <Compile Remove="Features - Copy\**" />
+    <Compile Remove="Mapping - Copy %282%29\**" />
+    <Compile Remove="Mapping - Copy\**" />
+    <EmbeddedResource Remove="Features - Copy %282%29\**" />
+    <EmbeddedResource Remove="Features - Copy %283%29\**" />
+    <EmbeddedResource Remove="Features - Copy\**" />
+    <EmbeddedResource Remove="Mapping - Copy %282%29\**" />
+    <EmbeddedResource Remove="Mapping - Copy\**" />
+    <None Remove="Features - Copy %282%29\**" />
+    <None Remove="Features - Copy %283%29\**" />
+    <None Remove="Features - Copy\**" />
+    <None Remove="Mapping - Copy %282%29\**" />
+    <None Remove="Mapping - Copy\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Features\Authentication\Command\Results\" />
+    <Folder Include="Features\Authentication\Command\Validators\" />
+    <Folder Include="Features\Authentication\Queries\" />
+    <Folder Include="Features\Claims\Commands\" />
+    <Folder Include="Features\Otp\Commands\Handler\" />
+    <Folder Include="Features\UserUpgradeRequests\Command\Results\" />
+    <Folder Include="Features\UserUpgradeRequests\Queries\Results\" />
+    <Folder Include="Mapping\ApplicationUsers\Queries\" />
+    <Folder Include="Mapping\Roles\Commands\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="14.0.0" />
+    <PackageReference Include="FluentValidation" Version="12.0.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
+    <PackageReference Include="MediatR" Version="12.5.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.17" />
+    <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="8.0.17" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.17" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mashawer.Service\Mashawer.Service.csproj" />
+  </ItemGroup>
+
+</Project>

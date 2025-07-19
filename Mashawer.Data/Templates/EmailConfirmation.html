@@ -1,0 +1,669 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Confirmation - Mashawer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style type="text/css" rel="stylesheet" media="all">
+        :root {
+            --primary-color: #1E40AF;
+            --primary-light: #3B82F6;
+            --primary-dark: #1E3A8A;
+            --accent-color: #10B981;
+            --accent-light: #34D399;
+            --text-primary: #111827;
+            --text-secondary: #6B7280;
+            --text-muted: #9CA3AF;
+            --background-light: #F8FAFC;
+            --background-white: #FFFFFF;
+            --border-color: #E5E7EB;
+            --border-light: #F3F4F6;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            --gradient-primary: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+            --gradient-success: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-light) 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        .email-wrapper {
+            max-width: 600px;
+            margin: 0 auto;
+            background: var(--background-white);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: var(--shadow-xl);
+            position: relative;
+        }
+
+            .email-wrapper::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 4px;
+                background: var(--gradient-primary);
+            }
+
+        .email-masthead {
+            padding: 3rem 2rem 2rem;
+            background: var(--gradient-primary);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+            .email-masthead::before {
+                content: '';
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+                animation: float 6s ease-in-out infinite;
+            }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-20px) rotate(180deg);
+            }
+        }
+
+        .email-masthead_name {
+            color: white !important;
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .tagline {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-top: 0.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .content-cell {
+            padding: 3rem 2.5rem;
+        }
+
+        .status-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .status-icon-pending {
+            background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+            color: #D97706;
+            box-shadow: 0 0 0 8px rgba(251, 191, 36, 0.1);
+        }
+
+        .status-icon-success {
+            background: var(--gradient-success);
+            color: white;
+            box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.1);
+            animation: successPulse 2s ease-in-out;
+        }
+
+        @keyframes successPulse {
+            0% {
+                transform: scale(0.8);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+
+            50% {
+                transform: scale(1.1);
+                box-shadow: 0 0 0 20px rgba(16, 185, 129, 0);
+            }
+
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.1);
+            }
+        }
+
+        h1 {
+            color: var(--text-primary);
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            letter-spacing: -0.5px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.125rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            font-weight: 500;
+        }
+
+        p {
+            color: var(--text-secondary);
+            line-height: 1.75;
+            margin-bottom: 1.5rem;
+            font-size: 1rem;
+        }
+
+        .greeting {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .button {
+            background: var(--gradient-primary);
+            border: none;
+            border-radius: 12px;
+            padding: 1.25rem 2.5rem;
+            color: white !important;
+            font-weight: 600;
+            font-size: 1.125rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+            .button:hover {
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-xl);
+            }
+
+            .button:active {
+                transform: translateY(0);
+            }
+
+            .button::before {
+                content: '';
+                position: absolute;
+                top: -50%;
+                left: -50%;
+                width: 200%;
+                height: 200%;
+                background: linear-gradient(45deg, transparent, rgba(255,255,255,0.2), transparent);
+                transform: rotate(45deg);
+                transition: all 0.5s;
+                opacity: 0;
+            }
+
+            .button:hover::before {
+                animation: shimmer 0.7s ease-in-out;
+            }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%) translateY(-100%) rotate(45deg);
+                opacity: 0;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateX(100%) translateY(100%) rotate(45deg);
+                opacity: 0;
+            }
+        }
+
+        .button-icon {
+            font-size: 1.25rem;
+        }
+
+        .button-success {
+            background: var(--gradient-success);
+        }
+
+        .action-center {
+            text-align: center;
+            margin: 2.5rem 0;
+        }
+
+        .security-note {
+            padding: 1.5rem;
+            background: var(--background-light);
+            border-radius: 12px;
+            margin: 2rem 0;
+            border-left: 4px solid var(--primary-color);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .link-block {
+            word-break: break-all;
+            padding: 1.5rem;
+            background: var(--border-light);
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            color: var(--text-muted);
+            margin: 1.5rem 0;
+            font-size: 0.875rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .email-footer {
+            padding: 2.5rem 2rem;
+            background: var(--background-light);
+            text-align: center;
+            border-top: 1px solid var(--border-color);
+        }
+
+            .email-footer p {
+                color: var(--text-muted);
+                font-size: 0.875rem;
+                margin: 0.25rem 0;
+            }
+
+        .company-name {
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 2rem 0;
+        }
+
+        .loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .contact-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+        }
+
+            .contact-card h3 {
+                color: var(--text-primary);
+                font-size: 1.125rem;
+                font-weight: 600;
+                margin-bottom: 1rem;
+            }
+
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 1rem 0.5rem;
+            }
+
+            .email-wrapper {
+                border-radius: 16px;
+            }
+
+            .content-cell {
+                padding: 2rem 1.5rem;
+            }
+
+            h1 {
+                font-size: 1.875rem;
+            }
+
+            .email-masthead_name {
+                font-size: 1.75rem;
+            }
+
+            .button {
+                padding: 1rem 2rem;
+                font-size: 1rem;
+            }
+
+            .status-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 2rem;
+            }
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --text-primary: #F9FAFB;
+                --text-secondary: #D1D5DB;
+                --text-muted: #9CA3AF;
+                --background-light: #1F2937;
+                --background-white: #111827;
+                --border-color: #374151;
+                --border-light: #1F2937;
+            }
+        }
+
+        /* Add these styles to your existing CSS */
+        #confirmPage, #thankYouPage {
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        .status-icon {
+            transition: all 0.5s ease;
+        }
+
+        .status-icon-success {
+            animation: successAnimation 0.5s ease-out forwards;
+        }
+
+        @keyframes successAnimation {
+            0% {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+
+            50% {
+                transform: scale(1.2);
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-wrapper fade-in">
+        <!-- Masthead Section -->
+        <div class="email-masthead">
+            <div class="email-masthead_name">
+                <div class="logo-icon">🚀</div>
+                Mashawer
+            </div>
+            <div class="tagline">Premium Market Research Solutions</div>
+        </div>
+
+        <!-- Confirmation Page -->
+        <div class="content-cell" id="confirmPage">
+            <div class="status-icon status-icon-pending">
+                📧
+            </div>
+
+            <h1>Confirm Your Email</h1>
+            <p class="subtitle">We're excited to have you on board!</p>
+
+            <p class="greeting">Hi <span id="userName">{{name}}</span>,</p>
+
+            <p>Welcome to <strong>Mashawer</strong>! To complete your registration and unlock access to our comprehensive market research solutions, please verify your email address.</p>
+
+            <div class="action-center">
+                <a href="{{action_url}}" class="button" id="verifyButton">
+                    <span class="button-icon">✉️</span>
+                    Verify Email Address
+                </a>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <span>Processing verification...</span>
+                </div>
+            </div>
+
+            <div class="security-note">
+                <strong>🔒 Security Notice:</strong> This verification link will expire in 24 hours for your security. If you didn't create an account with Mashawer, you can safely ignore this email.
+            </div>
+
+            <div class="divider"></div>
+
+            <p><strong>Having trouble with the button?</strong></p>
+            <p>Copy and paste this link into your browser:</p>
+            <div class="link-block" id="actionUrl">
+                {{action_url}}
+            </div>
+
+            <p>Best regards,<br><span class="company-name">The Mashawer Team</span></p>
+        </div>
+
+        <!-- Thank You Page -->
+        <div class="content-cell" id="thankYouPage" style="display: none;">
+            <div class="status-icon status-icon-success">
+                ✅
+            </div>
+
+            <h1>Email Confirmed!</h1>
+            <p class="subtitle">Welcome to Mashawer</p>
+
+            <p>Thank you for verifying your email address! Your account is now <strong>fully activated</strong> and ready to use.</p>
+
+            <p>You now have access to:</p>
+            <ul style="color: var(--text-secondary); margin: 1.5rem 0; padding-left: 1rem;">
+                <li>Comprehensive market research reports</li>
+                <li>Industry analytics and insights</li>
+                <li>Premium consultation services</li>
+                <li>Exclusive market trends data</li>
+            </ul>
+
+            <div class="action-center">
+                <a href="/dashboard" class="button button-success" id="dashboardButton">
+                    <span class="button-icon">🎯</span>
+                    Access Dashboard
+                </a>
+            </div>
+
+            <div class="contact-card">
+                <h3>Need Assistance?</h3>
+                <div class="contact-info">
+                    <div><strong>Email:</strong> support@agecslicensing.com</div>
+                    <div><strong>Phone:</strong> +20 (0) 123 456 789</div>
+                    <div><strong>Hours:</strong> Monday - Friday, 9:00 AM - 6:00 PM (EET)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="email-footer">
+            <p class="company-name">Mashawer</p>
+            <p>Premium Market Research Solutions</p>
+            <p>1234 Business District, New Cairo, Egypt 11835</p>
+            <p>© 2024 Mashawer. All rights reserved.</p>
+        </div>
+    </div>
+
+    <script>
+        async function checkAndConfirmEmail() {
+            const confirmPage = document.getElementById('confirmPage');
+            const thankYouPage = document.getElementById('thankYouPage');
+            const loading = document.getElementById('loading');
+            const button = document.querySelector('#verifyButton');
+
+            // Get URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const userId = urlParams.get('userId');
+            const code = urlParams.get('code');
+
+            // If we have userId and code, proceed with confirmation
+            if (userId && code) {
+                // Show loading state
+                if (button) button.style.display = 'none';
+                loading.style.display = 'flex';
+
+                try {
+                    // Make the confirmation request
+                    const response = await fetch(`http://licensing.tryasp.net/Api/V1/Authentication/ConfirmEmail?userId=${userId}&code=${code}`, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    const result = await response.json();
+
+                    if (result.succeeded && result.statusCode === 200) {
+                        // Show thank you page with animation
+                        confirmPage.style.opacity = '0';
+                        setTimeout(() => {
+                            confirmPage.style.display = 'none';
+                            thankYouPage.style.display = 'block';
+                            thankYouPage.querySelector('.status-icon').classList.add('status-icon-success');
+                            setTimeout(() => {
+                                thankYouPage.style.opacity = '1';
+                            }, 50);
+                        }, 300);
+
+                        // Update URL to show confirmed state without parameters
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.delete('userId');
+                        newUrl.searchParams.delete('code');
+                        newUrl.searchParams.set('confirmed', 'true');
+                        window.history.replaceState({}, '', newUrl);
+                    } else {
+                        // Show error message
+                        alert('حدث خطأ أثناء تأكيد البريد الإلكتروني. يرجى المحاولة مرة أخرى.');
+                        if (button) button.style.display = 'inline-flex';
+                        loading.style.display = 'none';
+                    }
+                } catch (error) {
+                    // Handle network or other errors
+                    alert('حدث خطأ أثناء تأكيد البريد الإلكتروني. يرجى المحاولة مرة أخرى.');
+                    if (button) button.style.display = 'inline-flex';
+                    loading.style.display = 'none';
+                }
+            }
+        }
+
+        // Run confirmation check when page loads
+        window.addEventListener('load', function () {
+            const urlParams = new URLSearchParams(window.location.search);
+
+            // If already confirmed, show thank you page
+            if (urlParams.get('confirmed') === 'true') {
+                const confirmPage = document.getElementById('confirmPage');
+                const thankYouPage = document.getElementById('thankYouPage');
+
+                confirmPage.style.display = 'none';
+                thankYouPage.style.display = 'block';
+                thankYouPage.style.opacity = '1';
+                thankYouPage.querySelector('.status-icon').classList.add('status-icon-success');
+            }
+            // If we have userId and code, attempt confirmation
+            else if (urlParams.get('userId') && urlParams.get('code')) {
+                checkAndConfirmEmail();
+            }
+        });
+    </script>
+</body>
+</html>
