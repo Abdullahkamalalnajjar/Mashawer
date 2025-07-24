@@ -9,7 +9,7 @@ namespace Mashawer.Core.Features.Admin.Command.Handler
 
         public async Task<Response<string>> Handle(AcceptOrRejectRequestCommand request, CancellationToken cancellationToken)
         {
-            var result = await _adminService.AccpetOrRejectRequestAgentAsync(request.RequestId, request.Status);
+            var result = await _adminService.AccpetOrRejectRequestAgentAsync(request.RequestId, request.UserType, request.Status);
             if (result == "NotFound")
             {
                 return NotFound<string>("Request not found.");

@@ -1,9 +1,7 @@
-﻿using Mashawer.Data.Enums;
-
-namespace Mashawer.Service.Abstracts
+﻿namespace Mashawer.Service.Abstracts
 {
     public interface IAdminService
     {
-        public Task<string> AccpetOrRejectRequestAgentAsync(int requestId, UpgradeRequestStatus upgradeRequestStatus);
+        public Task<string> AccpetOrRejectRequestAgentAsync(int requestId, UserType userType, UpgradeRequestStatus upgradeRequestStatus);
     }
 }

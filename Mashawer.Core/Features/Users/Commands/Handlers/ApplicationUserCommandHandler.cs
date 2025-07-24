@@ -4,6 +4,7 @@
         IRequestHandler<EditApplicationUserCommand, Response<string>>,
         IRequestHandler<CreateUserCommand, Response<string>>,
         IRequestHandler<UpdateUserCommand, Response<string>>,
+        IRequestHandler<DeleteUserWithReasonCommand, Response<string>>,
         IRequestHandler<DeleteUserCommand, Response<string>>
 
     {
@@ -68,7 +69,7 @@
             return UnprocessableEntity<string>("Exit error when make update");
         }
 
-        public async Task<Response<string>> Handle(DeleteUserCommand request, CancellationToken cancellationToken)
+        public async Task<Response<string>> Handle(DeleteUserWithReasonCommand request, CancellationToken cancellationToken)
         {
             var userId = _currentUserService.UserId;
             var user = await _unitOfWork.Users.FindAsync(x => x.Id.Equals(userId));
@@ -81,6 +82,15 @@
                 return Deleted<string>("Application user has been deleted successfully");
             }
             return BadRequest<string>("Delete user failed, please try again");
+        }
+
+        public async Task<Response<string>> Handle(DeleteUserCommand request, CancellationToken cancellationToken)
+        {
+            var user = await _userManager.FindByIdAsync(request.UserId);
+            var result = await _userService.DeleteUserAsync(user);
+            if (result == "Deleted")
+                return Deleted<string>("Deleted Succssfully");
+            return BadRequest<string>("Exist error in delete");
         }
 
         #endregion

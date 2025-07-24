@@ -11,6 +11,7 @@
         int TokenExpiresIn,
         string? RefreshToken,
         string UserType,
+        string? AgentAddress,
         DateTime RefreshTokenExpiresIn
  );
 }

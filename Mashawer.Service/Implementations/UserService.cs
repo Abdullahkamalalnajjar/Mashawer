@@ -199,6 +199,12 @@ namespace Mashawer.Service.Implementations
 
             return users;
         }
+
+        public async Task<string> DeleteUserAsync(ApplicationUser applicationUser)
+        {
+            await _userManager.DeleteAsync(applicationUser);
+            return "Deleted";
+        }
     }
 
 }

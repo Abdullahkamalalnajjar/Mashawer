@@ -12,6 +12,7 @@ namespace Mashawer.Data.Entities
         public string? ProfilePictureUrl { get; set; }
         public UserType UserType { get; set; } = UserType.NormalUser;
         public string? Address { get; set; }
+        public string? AgentAddress { get; set; }
         public List<RefreshToken>? RefreshTokens { get; set; } = new List<RefreshToken>();
     }
 }

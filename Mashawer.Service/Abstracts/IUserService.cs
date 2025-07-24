@@ -9,6 +9,7 @@
         public Task<UserResponse> GetUserById(string id);
         public Task<string> UpdateProfileUser(ApplicationUser user);
         public Task<string> DeleteUserWithReasone(ApplicationUser applicationUser, string reason, CancellationToken cancellationToken);
+        public Task<string> DeleteUserAsync(ApplicationUser applicationUser);
         public Task<string> CreateUserAsync(string email, string firstName, string LastName, string password, IList<string> roles);
         public Task<string> UpdateUserAsync(ApplicationUser user, IList<string> roles);
 

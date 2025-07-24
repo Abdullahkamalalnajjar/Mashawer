@@ -6,7 +6,8 @@ namespace Mashawer.Core.Features.UserUpgradeRequests.Queries.Handler
         IRequestHandler<GetUserUpgradeRequestByIdQuery, Response<UserUpgradeRequest>>,
         IRequestHandler<GetUserUpgradeRequestByAgentIdQuery, Response<IEnumerable<UserUpgradeRequestResponse>>>,
         IRequestHandler<GetUserUpgradeRequestByUserIdQuery, Response<IEnumerable<UserUpgradeRequestResponse>>>,
-        IRequestHandler<GetUserUpgradeRequestListQuery, Response<IEnumerable<UserUpgradeRequestResponse>>>
+        IRequestHandler<GetUserUpgradeRequestListQuery, Response<IEnumerable<UserUpgradeRequestResponse>>>,
+        IRequestHandler<GetAllUserUpgradeRequestByAddressQuery, Response<IEnumerable<UserUpgradeRequestResponse>>>
 
     {
         private readonly IUserUpgradeRequestService _userUpgradeRequestService = userUpgradeRequestService;
@@ -50,6 +51,11 @@ namespace Mashawer.Core.Features.UserUpgradeRequests.Queries.Handler
                 return NotFound<IEnumerable<UserUpgradeRequestResponse>>("No user upgrade requests found.");
             }
             return Success(response, "User upgrade requests retrieved successfully.");
+        }
+        public async Task<Response<IEnumerable<UserUpgradeRequestResponse>>> Handle(GetAllUserUpgradeRequestByAddressQuery request, CancellationToken cancellationToken)
+        {
+            var response = await _userUpgradeRequestService.GetAllUpgradeRequestsByAddressAsync(request.Address);
+            return Success(response, "User upgrade requests by address retrieved successfully.");
         }
     }
 }

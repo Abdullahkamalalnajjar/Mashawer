@@ -32,11 +32,18 @@ namespace Mashawer.Api.Controllers
             return NewResult(response);
         }
         [HttpDelete("deleteUser-with-reason")]
-        public async Task<IActionResult> DeleteUserWithReason(DeleteUserCommand command)
+        public async Task<IActionResult> DeleteUserWithReason(DeleteUserWithReasonCommand command)
         {
             var response = await Mediator.Send(command);
             return NewResult(response);
         }
+        [HttpDelete("deleteUser")]
+        public async Task<IActionResult> DeleteUse(DeleteUserCommand command)
+        {
+            var response = await Mediator.Send(command);
+            return NewResult(response);
+        }
+
         [AllowAnonymous]
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword(ResetPasswordCommand command)

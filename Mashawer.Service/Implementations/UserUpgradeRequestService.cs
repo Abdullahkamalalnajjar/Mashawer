@@ -1,4 +1,6 @@
-﻿namespace Mashawer.Service.Implementations
+﻿using Org.BouncyCastle.Crypto.Utilities;
+
+namespace Mashawer.Service.Implementations
 {
     public class UserUpgradeRequestService(IUnitOfWork unitOfWork) : IUserUpgradeRequestService
     {
@@ -66,7 +68,6 @@
            })
            .ToListAsync();
         }
-
         public async Task<IEnumerable<UserUpgradeRequestResponse>> GetUpgradeRequestsByUserIdAsync(string userId)
         {
             return await _unitOfWork.UserUpgradeRequests.GetTableNoTracking()
@@ -89,13 +90,33 @@
            })
            .ToListAsync();
         }
-
         public string UpdateUpgradeRequest(UserUpgradeRequest request)
         {
             _unitOfWork.UserUpgradeRequests.Update(request);
             return "Updated";
         }
-
+        public async Task<IEnumerable<UserUpgradeRequestResponse>> GetAllUpgradeRequestsByAddressAsync(string address)
+        {
+            return await _unitOfWork.UserUpgradeRequests.GetTableNoTracking()
+                .Where(x => x.Address == address)
+                .Select(x => new UserUpgradeRequestResponse
+                {
+                    Id = x.Id,
+                    UserId = x.UserId,
+                    UserName = x.User.FullName,
+                    UserEmail = x.User.Email,
+                    UserPhone = x.User.PhoneNumber,
+                    UserImage = x.User.ProfilePictureUrl,
+                    RequestedRole = x.RequestedRole.ToString(),
+                    TargetAgentId = x.TargetAgentId,
+                    TargetAgentName = x.TargetAgent != null ? x.TargetAgent.FullName : null,
+                    Note = x.Note,
+                    Address = x.Address,
+                    CreatedAt = x.CreatedAt,
+                    Status = x.Status.ToString()
+                })
+                .ToListAsync();
+        }
 
     }
 }

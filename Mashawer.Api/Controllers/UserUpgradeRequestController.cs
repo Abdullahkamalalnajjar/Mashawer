@@ -51,6 +51,12 @@ namespace Mashawer.Api.Controllers
             var result = await Mediator.Send(new GetUserUpgradeRequestByAgentIdQuery(agentId));
             return NewResult(result);
         }
+        [HttpGet(Router.UserUpgradeRequestRouting.GetByAddress)] // المحافظة
+        public async Task<IActionResult> GetByAddress([FromRoute] string address)
+        {
+            var result = await Mediator.Send(new GetAllUserUpgradeRequestByAddressQuery(address));
+            return NewResult(result);
+        }
 
 
     }

@@ -6,6 +6,7 @@ namespace Mashawer.Core.Features.Admin.Command.Models
     {
         public int RequestId { get; set; }
         public UpgradeRequestStatus Status { get; set; }
+        public UserType UserType { get; set; } 
 
     }
 }

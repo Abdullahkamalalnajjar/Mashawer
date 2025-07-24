@@ -4,6 +4,7 @@
     {
         NormalUser = 0,
         Agent = 1,
-        Representative = 2
+        Representative = 2,
+        Admin
     }
 }
