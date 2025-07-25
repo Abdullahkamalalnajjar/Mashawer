@@ -10,6 +10,9 @@
         public Task<IEnumerable<UserUpgradeRequestResponse>> GetAllUpgradeRequestsByAddressAsync(string address);
         public Task<IEnumerable<UserUpgradeRequestResponse>> GetUpgradeRequestsByUserIdAsync(string userId);
         public Task<IEnumerable<UserUpgradeRequestResponse>> GetUpgradeRequestsByTargetAgentIdAsync(string targetAgentId);
+        public Task<IEnumerable<UserUpgradeRequestResponse>> GetUpgradeRequestsByTypeAsync(RequestedRole requestedRole, string? address);
 
-    }
+
+
+        }
 }

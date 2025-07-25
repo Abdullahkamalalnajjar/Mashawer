@@ -56,6 +56,7 @@ namespace Mashawer.Service.Implementations
                 RefreshToken: refreshToken,
                 UserType: user.UserType.ToString(),
                 AgentAddress: user.AgentAddress,
+                RepresentativeAddress: user.RepresentativeAddress,
                 RefreshTokenExpiresIn: refreshTokenExpiresIn
             );
 
@@ -100,8 +101,8 @@ namespace Mashawer.Service.Implementations
                 Token: newToken,
                 IsDisable: user.IsDisable,
                 UserType: user.UserType.ToString(),
-                                AgentAddress: user.AgentAddress,
-
+                AgentAddress: user.AgentAddress,
+                RepresentativeAddress: user.RepresentativeAddress,
                 TokenExpiresIn: expiresIn,
                 RefreshToken: newRefreshToken,
                 RefreshTokenExpiresIn: newRefreshTokenExpiresIn

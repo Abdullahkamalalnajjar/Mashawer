@@ -2,6 +2,7 @@
 using Mashawer.Core.Features.UserUpgradeRequests.Command.Models;
 using Mashawer.Core.Features.UserUpgradeRequests.Queries.Models;
 using Mashawer.Data.AppMetaData;
+using Mashawer.Data.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Mashawer.Api.Controllers
@@ -55,6 +56,12 @@ namespace Mashawer.Api.Controllers
         public async Task<IActionResult> GetByAddress([FromRoute] string address)
         {
             var result = await Mediator.Send(new GetAllUserUpgradeRequestByAddressQuery(address));
+            return NewResult(result);
+        }
+        [HttpGet(Router.UserUpgradeRequestRouting.FilterByTypeOrAddress)] // نوع طلب , المحافظة
+        public async Task<IActionResult> FilterByTypeOrAddress([FromQuery] string? address, RequestedRole requestedRole)
+        {
+            var result = await Mediator.Send(new GetUpgradeRequestsByTypeOrAddressQuery(address, requestedRole));
             return NewResult(result);
         }
 

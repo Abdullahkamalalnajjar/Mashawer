@@ -1,6 +1,4 @@
-﻿using Org.BouncyCastle.Crypto.Utilities;
-
-namespace Mashawer.Service.Implementations
+﻿namespace Mashawer.Service.Implementations
 {
     public class UserUpgradeRequestService(IUnitOfWork unitOfWork) : IUserUpgradeRequestService
     {
@@ -118,5 +116,26 @@ namespace Mashawer.Service.Implementations
                 .ToListAsync();
         }
 
+        public async Task<IEnumerable<UserUpgradeRequestResponse>> GetUpgradeRequestsByTypeAsync(RequestedRole requestedRole, string? address)
+        {
+            return await _unitOfWork.UserUpgradeRequests.GetTableNoTracking()
+                .Where(x => x.RequestedRole == requestedRole && (address == null || x.Address == address))
+                .Select(x => new UserUpgradeRequestResponse
+                {
+                    Id = x.Id,
+                    UserId = x.UserId,
+                    UserName = x.User.FullName,
+                    UserEmail = x.User.Email,
+                    UserPhone = x.User.PhoneNumber,
+                    UserImage = x.User.ProfilePictureUrl,
+                    RequestedRole = x.RequestedRole.ToString(),
+                    TargetAgentId = x.TargetAgentId,
+                    TargetAgentName = x.TargetAgent != null ? x.TargetAgent.FullName : null,
+                    Note = x.Note,
+                    Address = x.Address,
+                    CreatedAt = x.CreatedAt,
+                    Status = x.Status.ToString()
+                }).ToListAsync();
+        }
     }
 }

@@ -67,6 +67,7 @@ namespace Mashawer.Service.Implementations
                 IsDisable: user.IsDisable,
                 UserType: user.UserType.ToString(),
                 AgentAddress: user.AgentAddress,
+                RepresentativeAddress: user.RepresentativeAddress,
                 TokenExpiresIn: expiresIn,
                 RefreshToken: refreshToken,
                 RefreshTokenExpiresIn: refreshTokenExpiresIn
