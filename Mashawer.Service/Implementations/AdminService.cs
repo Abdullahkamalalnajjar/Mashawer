@@ -17,7 +17,7 @@ namespace Mashawer.Service.Implementations
             var user = await _unitOfWork.Users.GetTableAsTracking()
                 .FirstOrDefaultAsync(x => x.Id == request.UserId);
             user.UserType = userType; // Assuming the request is for an agent upgrade
-            if (userType == UserType.Admin)
+            if (userType == UserType.Agent)
                 user.AgentAddress = request.Address;
             if (userType == UserType.Representative)
                 user.RepresentativeAddress = request.Address;

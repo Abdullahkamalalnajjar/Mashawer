@@ -15,6 +15,17 @@
             public const string GoogleLoginCallback = Prefix + "GoogleLoginCallback";
         }
 
+        public static class RepresentativeRouting
+        {
+            private const string Prefix = Rule + "/" + "Representative/";
+            public const string List = Prefix + ListRoute;
+            public const string GetById = Prefix + SingleRoute;
+            public const string Create = Prefix + "Create";
+            public const string Edit = Prefix + "Edit";
+            public const string Delete = Prefix + "Delete/{id}";
+            public const string Paginated = Prefix + "Paginated";
+            public const string GetApprovedRepresentativesByAddress = Prefix + "GetApprovedRepresentativesByAddress/{address}";
+        }
         public static class UserUpgradeRequestRouting
         {
             private const string Prefix = Rule + "/" + "UserUpgradeRequest/";

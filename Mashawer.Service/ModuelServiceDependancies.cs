@@ -18,6 +18,7 @@ namespace Mashawer.Service
             services.AddTransient<IUserUpgradeRequestService, UserUpgradeRequestService>();
             services.AddTransient<IOtpService, OtpService>();
             services.AddTransient<IAdminService, AdminService>();
+            services.AddTransient<IRepresentativeService, RepresentativeService>();
             return services;
         }
     }

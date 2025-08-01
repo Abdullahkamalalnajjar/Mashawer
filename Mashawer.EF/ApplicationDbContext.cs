@@ -1,4 +1,6 @@
-﻿namespace Mashawer.EF
+﻿using Mashawer.Data.Entities.ClasssOfOrder;
+
+namespace Mashawer.EF
 {
     public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IHttpContextAccessor httpContextAccessor)
         : IdentityDbContext<ApplicationUser, ApplicationRole, string>(options)
@@ -18,7 +20,7 @@
         public DbSet<ApplicationUser> Users { get; set; }
         public DbSet<DeletedRecord> DeletedRecords { get; set; }
         public DbSet<UserUpgradeRequest> UserUpgradeRequests { get; set; }
-
+        public DbSet<Order> Orders { get; set; }
 
     }
 }

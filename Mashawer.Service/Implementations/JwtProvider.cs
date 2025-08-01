@@ -1,7 +1,4 @@
 ﻿
-
-using System.Text.Json;
-
 namespace Mashawer.Service.Implementations
 {
     public class JwtProvider(IOptions<JwtSettings> options) : IJwtProvider
@@ -13,16 +10,16 @@ namespace Mashawer.Service.Implementations
             // Implementation for generating JWT token
 
             // make sure to include user claims, expiration time, and signing credentials
-            Claim[] UserClaims = [
+            Claim[] UserClaims =
+                [
                 new (JwtRegisteredClaimNames.Sub, user.Id),
                 new (JwtRegisteredClaimNames.Email, user.Email!),
                 new (JwtRegisteredClaimNames.GivenName, user.FirstName),
                 new (JwtRegisteredClaimNames.FamilyName, user.FullName),
                 new (JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(nameof(roles), JsonSerializer.Serialize(roles), JsonClaimValueTypes.JsonArray),
-            new(nameof(permissions), JsonSerializer.Serialize(permissions), JsonClaimValueTypes.JsonArray)
-
-            ];
+                new(nameof(roles), JsonSerializer.Serialize(roles), JsonClaimValueTypes.JsonArray),
+                new(nameof(permissions), JsonSerializer.Serialize(permissions), JsonClaimValueTypes.JsonArray)
+                ];
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Secret));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -70,8 +67,5 @@ namespace Mashawer.Service.Implementations
                 return null;
             }
         }
-
     }
-
-
 }

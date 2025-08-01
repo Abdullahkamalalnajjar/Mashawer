@@ -30,6 +30,8 @@
     <Folder Include="Features\Authentication\Queries\" />
     <Folder Include="Features\Claims\Commands\" />
     <Folder Include="Features\Otp\Commands\Handler\" />
+    <Folder Include="Features\Representatives\Commands\" />
+    <Folder Include="Features\Representatives\Queries\Results\" />
     <Folder Include="Features\UserUpgradeRequests\Command\Results\" />
     <Folder Include="Features\UserUpgradeRequests\Queries\Results\" />
     <Folder Include="Mapping\ApplicationUsers\Queries\" />
