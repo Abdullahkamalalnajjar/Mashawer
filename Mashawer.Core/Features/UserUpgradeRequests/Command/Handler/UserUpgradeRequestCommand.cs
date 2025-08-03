@@ -1,4 +1,5 @@
 ﻿using Mashawer.Core.Features.UserUpgradeRequests.Command.Models;
+using Mashawer.Data.Enums;
 
 namespace Mashawer.Core.Features.UserUpgradeRequests.Command.Handler
 {
@@ -15,9 +16,22 @@ namespace Mashawer.Core.Features.UserUpgradeRequests.Command.Handler
         {
             var userUpgradeRequest = _mapper.Map<UserUpgradeRequest>(request);
             var result = await _userUpgradeRequestService.CreateUpgradeRequestAsync(userUpgradeRequest, cancellationToken);
+
             if (result == "Created")
             {
-                await _unitOfWork.CompeleteAsync();
+                if (request.RequestedRole == RequestedRole.Representative)
+                {
+                    var user = await _unitOfWork.Users.GetTableAsTracking()
+                         .FirstOrDefaultAsync(x => x.Id == request.UserId, cancellationToken);
+                    if (user != null)
+                    {
+                        user.RepresentativeLatitude = request.RepresentativeLatitude;
+                        user.RepresentativeLongitude = request.RepresentativeLongitude;
+                        _unitOfWork.Users.Update(user);
+                        await _unitOfWork.CompeleteAsync();
+
+                    }
+                }
                 return Success<string>("User upgrade request created successfully.", result);
             }
             return BadRequest<string>("Failed to create user upgrade request.");

@@ -14,5 +14,12 @@ namespace Mashawer.Api.Controllers
             var result = await Mediator.Send(query);
             return NewResult(result);
         }
+        [HttpGet(Router.RepresentativeRouting.NearestRepresentative)]
+        public async Task<IActionResult> GetNearestRepresentative(double fromLatitude, double fromLongitude, double toLatitude, double toLongitude)
+        {
+            var query = new GetNearestRepresentativeQuery(fromLatitude, fromLongitude, toLatitude, toLongitude);
+            var result = await Mediator.Send(query);
+            return NewResult(result);
+        }
     }
 }

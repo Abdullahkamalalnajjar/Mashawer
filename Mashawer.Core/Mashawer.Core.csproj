@@ -29,6 +29,7 @@
     <Folder Include="Features\Authentication\Command\Validators\" />
     <Folder Include="Features\Authentication\Queries\" />
     <Folder Include="Features\Claims\Commands\" />
+    <Folder Include="Features\Orders\Queries\Results\" />
     <Folder Include="Features\Otp\Commands\Handler\" />
     <Folder Include="Features\Representatives\Commands\" />
     <Folder Include="Features\Representatives\Queries\Results\" />

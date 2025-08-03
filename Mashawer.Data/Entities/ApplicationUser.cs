@@ -14,6 +14,9 @@ namespace Mashawer.Data.Entities
         public string? Address { get; set; }
         public string? AgentAddress { get; set; }
         public string? RepresentativeAddress { get; set; }
+        public double? RepresentativeLatitude { get; set; } // خط العرض لموقع الممثل    
+        public double? RepresentativeLongitude { get; set; } // خط الطول لموقع الممثل
+
         public List<RefreshToken>? RefreshTokens { get; set; } = new List<RefreshToken>();
     }
 }

@@ -14,7 +14,7 @@
             public const string GoogleSignIn = Prefix + "GoogleSignIn";
             public const string GoogleLoginCallback = Prefix + "GoogleLoginCallback";
         }
-
+   
         public static class RepresentativeRouting
         {
             private const string Prefix = Rule + "/" + "Representative/";
@@ -25,6 +25,7 @@
             public const string Delete = Prefix + "Delete/{id}";
             public const string Paginated = Prefix + "Paginated";
             public const string GetApprovedRepresentativesByAddress = Prefix + "GetApprovedRepresentativesByAddress/{address}";
+            public const string NearestRepresentative = Prefix + "NearestRepresentative";
         }
         public static class UserUpgradeRequestRouting
         {

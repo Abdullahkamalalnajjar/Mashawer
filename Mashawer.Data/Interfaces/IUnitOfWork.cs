@@ -7,6 +7,7 @@ namespace Mashawer.Data.Interfaces
         IUserRepository Users { get; }
         IDeleteRecoredRepository DeleteRecoreds { get; }
         IUserUpgradeRequestRepository UserUpgradeRequests { get; }
+        IOrderRepository Orders { get; }
         Task<int> CompeleteAsync();
         Task<IDbContextTransaction> BeginTransactionAsync();
 

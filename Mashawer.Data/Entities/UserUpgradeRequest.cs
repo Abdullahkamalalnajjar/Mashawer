@@ -18,5 +18,7 @@ namespace Mashawer.Data.Entities
         // للمندوب فقط
         public string? TargetAgentId { get; set; }
         public ApplicationUser? TargetAgent { get; set; }
+
+
     }
 }

@@ -10,5 +10,7 @@
         string UserType,
         string AgentAddress,
         string RepresentativeAddress,
+        double? RepresentativeLatitude,
+        double? RepresentativeLongitude,
         IEnumerable<string> Roles);
 }

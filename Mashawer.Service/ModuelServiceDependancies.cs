@@ -19,6 +19,7 @@ namespace Mashawer.Service
             services.AddTransient<IOtpService, OtpService>();
             services.AddTransient<IAdminService, AdminService>();
             services.AddTransient<IRepresentativeService, RepresentativeService>();
+            services.AddTransient<IOrderService, OrderService>();
             return services;
         }
     }

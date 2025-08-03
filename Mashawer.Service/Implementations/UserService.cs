@@ -56,7 +56,10 @@ namespace Mashawer.Service.Implementations
                     u.LastName,
                     u.UserType,
                     u.AgentAddress,
-                    u.RepresentativeAddress
+                    u.RepresentativeAddress,
+                    u.RepresentativeLongitude,
+                    u.RepresentativeLatitude
+
                 } into g
                 select new UserResponse(
                     g.Key.Id,
@@ -68,6 +71,8 @@ namespace Mashawer.Service.Implementations
                     g.Key.UserType.ToString(),
                     g.Key.AgentAddress,
                     g.Key.RepresentativeAddress,
+                    g.Key.RepresentativeLatitude,
+                    g.Key.RepresentativeLongitude,
                     g.Where(role => role != null).Select(role => role.Name).Distinct()
                 )
             ).ToListAsync();
@@ -96,7 +101,9 @@ namespace Mashawer.Service.Implementations
                     u.LastName,
                     u.UserType,
                     u.AgentAddress,
-                    u.RepresentativeAddress
+                    u.RepresentativeAddress,
+                    u.RepresentativeLongitude,
+                    u.RepresentativeLatitude
                 } into g
                 select new UserResponse(
                     g.Key.Id,
@@ -108,6 +115,8 @@ namespace Mashawer.Service.Implementations
                     g.Key.UserType.ToString(),
                     g.Key.AgentAddress,
                     g.Key.RepresentativeAddress,
+                    g.Key.RepresentativeLatitude,
+                    g.Key.RepresentativeLongitude,
                     g.Where(r => r != null).Select(r => r.Name).Distinct().ToList()
                 )
             ).SingleOrDefaultAsync();
@@ -158,7 +167,9 @@ namespace Mashawer.Service.Implementations
                      u.LastName,
                      u.UserType,
                      u.AgentAddress,// ✅ إضافة العنوان الخاص بالوكيل,
-                     u.RepresentativeAddress
+                     u.RepresentativeAddress,
+                     u.RepresentativeLongitude,
+                     u.RepresentativeLatitude
                  } into g
                  select new UserResponse(
                      g.Key.Id,
@@ -170,7 +181,8 @@ namespace Mashawer.Service.Implementations
                      g.Key.UserType.ToString(), // ✅ تحويل enum إلى string
                      g.Key.AgentAddress,
                      g.Key.RepresentativeAddress, // إضافة العنوان الخاص بالمندوب
-
+                     g.Key.RepresentativeLongitude,
+                     g.Key.RepresentativeLatitude,
                      g.Where(role => role != null).Select(role => role.Name).Distinct()
                  )
              ).ToListAsync();
@@ -198,7 +210,9 @@ namespace Mashawer.Service.Implementations
              u.LastName,
              u.UserType,
              u.AgentAddress,
-             u.RepresentativeAddress
+             u.RepresentativeAddress,
+             u.RepresentativeLongitude,
+             u.RepresentativeLatitude
          } into g
          select new UserResponse(
              g.Key.Id,
@@ -210,6 +224,8 @@ namespace Mashawer.Service.Implementations
              g.Key.UserType.ToString(), // ✅ تحويل enum إلى string
              g.Key.AgentAddress, // إضافة العنوان الخاص بالوكيل
              g.Key.RepresentativeAddress, // إضافة العنوان الخاص بالمندوب
+             g.Key.RepresentativeLongitude,
+             g.Key.RepresentativeLatitude,
              g.Where(role => role != null).Select(role => role.Name).Distinct()
          )
      ).ToListAsync();

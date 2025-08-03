@@ -1,8 +1,8 @@
-﻿using Mashawer.Data.Enums;
+﻿using Mashawer.Data.Entities.ClasssOfOrder;
 
-namespace Mashawer.Data.Entities.ClasssOfOrder
+namespace Mashawer.Data.Dtos
 {
-    public class Order
+    public class OrderDto
     {
         public int Id { get; set; }
 
@@ -22,23 +22,25 @@ namespace Mashawer.Data.Entities.ClasssOfOrder
         // تفاصيل العنصر المطلوب توصيله
         public string ItemDescription { get; set; }
 
+        // رقم هاتف المرسل
+
+
         // تفاصيل الطلب
         public decimal Price { get; set; }
         public string VehicleType { get; set; } // مثل: موتوسيكل
         public DateTime EstimatedArrivalTime { get; set; }
 
         // حالة الطلب
-        public OrderStatus Status { get; set; } = OrderStatus.Pending;
+        public string Status { get; set; }
 
         // سبب الإلغاء (إن وجد)
-        public CancelReason? CancelReason { get; set; }
+        public string? CancelReason { get; set; }
         public string? OtherCancelReasonDetails { get; set; }
         // تاريخ ووقت إنشاء الطلب
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public string ClientId { get; set; } // معرف المستخدم الذي قام بإنشاء الطلب
-        public ApplicationUser Client { get; set; } // المستخدم الذي قام بإنشاء الطلب
+        public string ClientName { get; set; } // المستخدم الذي قام بإنشاء الطلب
         public string? DriverId { get; set; } // معرف السائق الذي تم تعيينه للطلب (إن وجد)
-        public ApplicationUser? Driver { get; set; } // السائق الذي تم تعيينه للطلب (إن وجد)
-
+        public string? DriverName { get; set; } // السائق الذي تم تعيينه للطلب (إن وجد)
     }
 }
