@@ -1,10 +1,12 @@
 ﻿using Mashawer.Core.Features.Orders.Commands.Models;
 using Mashawer.Data.Entities.ClasssOfOrder;
+using Mashawer.Data.Enums;
 
 namespace Mashawer.Core.Features.Orders.Commands.Handler
 {
     public class OrderCommandHandler(IOrderService orderService, IMapper mapper, IUnitOfWork unitOfWork) : ResponseHandler,
-        IRequestHandler<CreateOrderCommand, Response<string>>
+        IRequestHandler<CreateOrderCommand, Response<string>>,
+        IRequestHandler<UpdateOrderStatusCommand, Response<string>>
     {
         private readonly IOrderService _orderService = orderService;
         private readonly IMapper _mapper = mapper;
@@ -21,5 +23,25 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
             }
             return UnprocessableEntity<string>("Exist error when make order");
         }
+
+        public async Task<Response<string>> Handle(UpdateOrderStatusCommand request, CancellationToken cancellationToken)
+        {
+            var order = await _unitOfWork.Orders.GetByIdAsync(request.OrderId);
+
+            if (order == null)
+                return NotFound<string>("Order not found");
+
+            if (order.Status == OrderStatus.Completed)
+                return BadRequest<string>("Cannot modify a completed order.");
+
+            if (request.NewStatus != OrderStatus.Confirmed && request.NewStatus != OrderStatus.Cancelled)
+                return BadRequest<string>("Invalid status update. Allowed: Confirmed or Cancelled.");
+
+            order.Status = request.NewStatus;
+            await _unitOfWork.CompeleteAsync();
+
+            return Success("Order status updated successfully");
+        }
     }
-}
+    }
+

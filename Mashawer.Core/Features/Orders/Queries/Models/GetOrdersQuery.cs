@@ -2,5 +2,6 @@
 {
     public class GetOrdersQuery : IRequest<Response<IEnumerable<OrderDto>>>
     {
+
     }
 }

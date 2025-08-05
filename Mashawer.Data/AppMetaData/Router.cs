@@ -50,8 +50,11 @@
             public const string GetById = Prefix + SingleRoute;
             public const string Create = Prefix + "Create";
             public const string Edit = Prefix + "Edit";
+            public const string UpdateStatus = Prefix + "UpdateStatus";
             public const string Delete = Prefix + "Delete/{id}";
             public const string Paginated = Prefix + "Paginated";
+            public const string GetOrdersByClientId = Prefix + "GetOrdersByClientId";
+            public const string GetOrdersByDriverId = Prefix + "GetOrdersByDriverId";
             public const string GetOrdersForUser = Prefix + "GetOrdersForUser";
         }
         public static class PaymentRouting

@@ -16,6 +16,7 @@
                 Message = Meessage == null ? "Deleted Successfully" : Meessage
             };
         }
+
         public Response<T> Success<T>(T entity, object Meta = null)
         {
             return new Response<T>()
@@ -88,6 +89,9 @@
                 Meta = Meta
             };
         }
+
+
+       
     }
 
 }
