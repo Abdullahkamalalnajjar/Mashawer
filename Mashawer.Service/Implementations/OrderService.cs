@@ -57,8 +57,6 @@ namespace Mashawer.Service.Implementations
                 return Enumerable.Empty<OrderDto>();
             return await _unitOfWork.Orders.GetTableNoTracking()
                .Where(x => x.ClientId == clientId)
-                .Include(o => o.Client)
-                .Include(o => o.Driver)
                .Select(OrderToDto)
                .ToListAsync();
 
@@ -71,8 +69,6 @@ namespace Mashawer.Service.Implementations
                 return Enumerable.Empty<OrderDto>();
             return await _unitOfWork.Orders.GetTableNoTracking()
               .Where(x => x.DriverId == driverId)
-               .Include(o => o.Client)
-               .Include(o => o.Driver)
               .Select(OrderToDto)
               .ToListAsync();
         }
