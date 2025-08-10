@@ -33,6 +33,9 @@ namespace Mashawer.Data.Entities.ClasssOfOrder
         // سبب الإلغاء (إن وجد)
         public CancelReason? CancelReason { get; set; }
         public string? OtherCancelReasonDetails { get; set; }
+        public string? ItemPhotoBefore { get; set; }
+        public string? ItemPhotoAfter { get; set; }
+     
         // تاريخ ووقت إنشاء الطلب
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public string ClientId { get; set; } // معرف المستخدم الذي قام بإنشاء الطلب

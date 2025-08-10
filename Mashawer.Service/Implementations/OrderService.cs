@@ -37,6 +37,8 @@ namespace Mashawer.Service.Implementations
             ItemDescription = o.ItemDescription,
             OtherCancelReasonDetails = o.OtherCancelReasonDetails,
             DeliveryLocation = o.DeliveryLocation,
+            ItemPhotoAfter = o.ItemPhotoAfter,
+            ItemPhotoBefore = o.ItemPhotoBefore,
         };
 
         #endregion 
@@ -71,6 +73,24 @@ namespace Mashawer.Service.Implementations
               .Where(x => x.DriverId == driverId)
               .Select(OrderToDto)
               .ToListAsync();
+        }
+
+        public async Task<string> AddOrderPhotosAsync(int orderId, string? photoBefore, string? photoAfter, CancellationToken cancellationToken)
+        {
+            var order = await _unitOfWork.Orders.GetByIdAsync(orderId);
+            if (order == null)
+                return "Order not found";
+
+            if (!string.IsNullOrEmpty(photoBefore))
+                order.ItemPhotoBefore = photoBefore;
+
+            if (!string.IsNullOrEmpty(photoAfter))
+                order.ItemPhotoAfter = photoAfter;
+
+            _unitOfWork.Orders.Update(order);
+            await _unitOfWork.CompeleteAsync();
+
+            return "Photos updated successfully";
         }
     }
     }

@@ -45,6 +45,17 @@ namespace Mashawer.Api.Controllers
             var result = await Mediator.Send(new GetOrdersByDriverIdQuery { DriverId = DriverId });
             return NewResult(result);
         }
-       
+        [HttpPost(Router.OrderRouting.UploadOrderPhotos)]
+        public async Task<IActionResult> UploadOrderPhotos([FromForm] AddOrderPhotosCommand command, CancellationToken cancellationToken)
+        {
+            var result = await Mediator.Send(command, cancellationToken);
+
+            if (!result.Succeeded)
+                return BadRequest(result);
+
+            return Ok(result);
+        }
+
+
     }
 }

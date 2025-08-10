@@ -1,16 +1,19 @@
 ﻿using Mashawer.Core.Features.Orders.Commands.Models;
 using Mashawer.Data.Entities.ClasssOfOrder;
 using Mashawer.Data.Enums;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Mashawer.Core.Features.Orders.Commands.Handler
 {
-    public class OrderCommandHandler(IOrderService orderService, IMapper mapper, IUnitOfWork unitOfWork) : ResponseHandler,
+    public class OrderCommandHandler(IOrderService orderService, IMapper mapper, IUnitOfWork unitOfWork, IHttpContextAccessor httpContextAccessor) : ResponseHandler,
         IRequestHandler<CreateOrderCommand, Response<string>>,
-        IRequestHandler<UpdateOrderStatusCommand, Response<string>>
+        IRequestHandler<UpdateOrderStatusCommand, Response<string>>,
+        IRequestHandler<AddOrderPhotosCommand, Response<string>>
     {
         private readonly IOrderService _orderService = orderService;
         private readonly IMapper _mapper = mapper;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
+        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
 
         public async Task<Response<string>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
         {
@@ -42,6 +45,25 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
 
             return Success("Order status updated successfully");
         }
+
+  
+      async Task<Response<string>> IRequestHandler<AddOrderPhotosCommand, Response<string>>.Handle(AddOrderPhotosCommand request, CancellationToken cancellationToken)
+        {
+            var order = await _unitOfWork.Orders.GetByIdAsync(request.OrderId);
+            if (order == null)
+                return new Response<string>("Order not found");
+
+            if (request.ItemPhotoBefore != null)
+                order.ItemPhotoBefore = FileHelper.SaveFile(request.ItemPhotoBefore, "OrderPhotos", _httpContextAccessor);
+
+            if (request.ItemPhotoAfter != null)
+                order.ItemPhotoAfter = FileHelper.SaveFile(request.ItemPhotoAfter, "OrderPhotos", _httpContextAccessor);
+
+            _unitOfWork.Orders.Update(order);
+            await _unitOfWork.CompeleteAsync();
+
+            return new Response<string>("Photos updated successfully");
+        }
     }
-    }
+}
 

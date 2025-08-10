@@ -56,6 +56,7 @@
             public const string GetOrdersByClientId = Prefix + "GetOrdersByClientId";
             public const string GetOrdersByDriverId = Prefix + "GetOrdersByDriverId";
             public const string GetOrdersForUser = Prefix + "GetOrdersForUser";
+            public const string UploadOrderPhotos = "Api/V1/Order/UploadPhotos";
         }
         public static class PaymentRouting
         {

@@ -42,5 +42,7 @@ namespace Mashawer.Data.Dtos
         public string ClientName { get; set; } // المستخدم الذي قام بإنشاء الطلب
         public string? DriverId { get; set; } // معرف السائق الذي تم تعيينه للطلب (إن وجد)
         public string? DriverName { get; set; } // السائق الذي تم تعيينه للطلب (إن وجد)
+        public string? ItemPhotoBefore { get; set; }
+        public string? ItemPhotoAfter { get; set; }
     }
 }
