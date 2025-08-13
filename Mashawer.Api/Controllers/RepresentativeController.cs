@@ -1,4 +1,5 @@
 ﻿using Mashawer.Api.Base;
+using Mashawer.Core.Features.Representatives.Command.Models;
 using Mashawer.Core.Features.Representatives.Queries.Models;
 using Mashawer.Data.AppMetaData;
 using Microsoft.AspNetCore.Mvc;
@@ -21,5 +22,14 @@ namespace Mashawer.Api.Controllers
             var result = await Mediator.Send(query);
             return NewResult(result);
         }
+
+        [HttpGet(Router.RepresentativeRouting.UpdateRepresentativeLivelocation)]
+        public async Task<IActionResult> UpdateRepresentativelocation([FromBody] UpdateRepresentativesLocationCommand command )
+        {
+        
+            var result = await Mediator.Send(command);
+            return NewResult(result);
+        }
+
     }
 }

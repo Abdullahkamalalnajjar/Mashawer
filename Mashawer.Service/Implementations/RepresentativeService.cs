@@ -1,4 +1,6 @@
-﻿namespace Mashawer.Service.Implementations
+﻿using Microsoft.AspNetCore.Mvc;
+
+namespace Mashawer.Service.Implementations
 {
     public class RepresentativeService(IUnitOfWork unitOfWork) : IRepresentativeService
     {
@@ -52,8 +54,8 @@
                     rep.DeleveryPrice = deliveryPrice; // تعيين سعر التوصيل داخل DTO
                     return rep;
                 })
-                .OrderBy(rep => rep.DistanceInKm)
-                .Take(5); // رجّع أقرب 5 مناديب
+                .Where(rep => rep.DistanceInKm <= 20).OrderBy(rep => rep.DistanceInKm)
+                .Take(10);
             return nearest;
         }
 
@@ -81,6 +83,22 @@
             double deliveryPrice = Math.Round(distance * pricePerKm, 2);
             return deliveryPrice;
         }
+
+      
+        public async Task<string> UpdateLocation(string userId, double latitude, double longitude)
+        {
+            var user = await _unitOfWork.Users.GetTableAsTracking().FirstOrDefaultAsync(x=>x.Id==userId);
+            if (user == null) return "NotFound";
+
+            user.RepresentativeLatitude = latitude;
+            user.RepresentativeLongitude = longitude;
+
+            _unitOfWork.Users.Update(user);
+            await _unitOfWork.CompeleteAsync();
+
+            return "Updated";
+        }
+
 
     }
 }

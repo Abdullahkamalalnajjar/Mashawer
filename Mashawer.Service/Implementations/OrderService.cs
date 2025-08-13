@@ -34,11 +34,12 @@ namespace Mashawer.Service.Implementations
             VehicleType = o.VehicleType,
             CancelReason = o.CancelReason.ToString(),
             Status = o.Status.ToString(),
-            ItemDescription = o.ItemDescription,
             OtherCancelReasonDetails = o.OtherCancelReasonDetails,
             DeliveryLocation = o.DeliveryLocation,
             ItemPhotoAfter = o.ItemPhotoAfter,
             ItemPhotoBefore = o.ItemPhotoBefore,
+            ItemDescription=o.ItemDescription
+            
         };
 
         #endregion 

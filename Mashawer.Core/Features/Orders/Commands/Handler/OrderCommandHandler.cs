@@ -62,7 +62,7 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
             _unitOfWork.Orders.Update(order);
             await _unitOfWork.CompeleteAsync();
 
-            return new Response<string>("Photos updated successfully");
+            return new Response<string>("Photos updated successfully", true);
         }
     }
 }

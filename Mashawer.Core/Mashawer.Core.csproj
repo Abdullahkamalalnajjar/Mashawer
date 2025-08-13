@@ -10,16 +10,19 @@
     <Compile Remove="Features - Copy %282%29\**" />
     <Compile Remove="Features - Copy %283%29\**" />
     <Compile Remove="Features - Copy\**" />
+    <Compile Remove="Features\Representatives\Commands\**" />
     <Compile Remove="Mapping - Copy %282%29\**" />
     <Compile Remove="Mapping - Copy\**" />
     <EmbeddedResource Remove="Features - Copy %282%29\**" />
     <EmbeddedResource Remove="Features - Copy %283%29\**" />
     <EmbeddedResource Remove="Features - Copy\**" />
+    <EmbeddedResource Remove="Features\Representatives\Commands\**" />
     <EmbeddedResource Remove="Mapping - Copy %282%29\**" />
     <EmbeddedResource Remove="Mapping - Copy\**" />
     <None Remove="Features - Copy %282%29\**" />
     <None Remove="Features - Copy %283%29\**" />
     <None Remove="Features - Copy\**" />
+    <None Remove="Features\Representatives\Commands\**" />
     <None Remove="Mapping - Copy %282%29\**" />
     <None Remove="Mapping - Copy\**" />
   </ItemGroup>
@@ -31,7 +34,6 @@
     <Folder Include="Features\Claims\Commands\" />
     <Folder Include="Features\Orders\Queries\Results\" />
     <Folder Include="Features\Otp\Commands\Handler\" />
-    <Folder Include="Features\Representatives\Commands\" />
     <Folder Include="Features\Representatives\Queries\Results\" />
     <Folder Include="Features\UserUpgradeRequests\Command\Results\" />
     <Folder Include="Features\UserUpgradeRequests\Queries\Results\" />

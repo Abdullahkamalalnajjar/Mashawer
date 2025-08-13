@@ -29,7 +29,7 @@ namespace Mashawer.Data.Dtos
         public decimal Price { get; set; }
         public string VehicleType { get; set; } // مثل: موتوسيكل
         public DateTime EstimatedArrivalTime { get; set; }
-
+      
         // حالة الطلب
         public string Status { get; set; }
 
