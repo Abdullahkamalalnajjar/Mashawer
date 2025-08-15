@@ -20,6 +20,12 @@ namespace Mashawer.Service
             services.AddTransient<IAdminService, AdminService>();
             services.AddTransient<IRepresentativeService, RepresentativeService>();
             services.AddTransient<IOrderService, OrderService>();
+            services.AddHttpClient<PaymobService>(client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(60);
+            });
+            services.AddScoped<PaymobService>();
+
             return services;
         }
     }
