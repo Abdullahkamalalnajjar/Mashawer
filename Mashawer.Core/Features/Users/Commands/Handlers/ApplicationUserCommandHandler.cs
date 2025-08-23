@@ -40,7 +40,7 @@
             if (allowRoles is null) return UnprocessableEntity<string>("No roles available, please create roles first");
             if (request.Roles.Except(allowRoles.Select(x => x.Name)).Any())
                 return UnprocessableEntity<string>("One or more roles are not valid, please check the roles provided");
-            var result = await _userService.CreateUserAsync(request.Email, request.FirstName, request.LastName, request.Password, request.Roles);
+            var result = await _userService.CreateUserAsync(request.Email, request.FirstName, request.LastName, request.Password, request.Roles, cancellationToken);
             if (result == "Created")
                 return Created<string>("Application user has been created successfully", new { request.Email });
             if (result == "ErrorCreatingUser")

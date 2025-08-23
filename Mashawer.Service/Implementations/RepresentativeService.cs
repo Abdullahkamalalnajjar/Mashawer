@@ -84,7 +84,7 @@ namespace Mashawer.Service.Implementations
             return deliveryPrice;
         }
 
-      
+  
         public async Task<string> UpdateLocation(string userId, double latitude, double longitude)
         {
             var user = await _unitOfWork.Users.GetTableAsTracking().FirstOrDefaultAsync(x=>x.Id==userId);

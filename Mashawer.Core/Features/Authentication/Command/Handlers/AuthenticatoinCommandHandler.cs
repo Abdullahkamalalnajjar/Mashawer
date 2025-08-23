@@ -74,11 +74,17 @@ namespace Mashawer.Core.Features.Authentication.Command.Handlers
                     var errors = string.Join(", ", result.Errors.Select(e => e.Description));
                     return BadRequest<string>(errors);
                 }
-
                 // Generate and send OTP
                 var otp = await _otpService.GenerateOtpAsync(newUser.Email);
                 await _otpService.SendOtpAsync(newUser.Email, otp);
-
+                // Create a wallet for the user with an initial balance of 0
+                var wallet = new Wallet
+                {
+                    UserId = newUser.Id,
+                    Balance = 0
+                };
+                await _unitOfWork.Wallets.AddAsync(wallet, cancellationToken);
+                await _unitOfWork.CompeleteAsync();
                 // Commit the transaction
                 await transaction.CommitAsync();
 

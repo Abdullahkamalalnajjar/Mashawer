@@ -8,6 +8,8 @@ namespace Mashawer.Data.Interfaces
         IDeleteRecoredRepository DeleteRecoreds { get; }
         IUserUpgradeRequestRepository UserUpgradeRequests { get; }
         IOrderRepository Orders { get; }
+        IWalletTransactionRepository WalletTransactions { get; }
+        IWalletRepository Wallets { get; }
         Task<int> CompeleteAsync();
         Task<IDbContextTransaction> BeginTransactionAsync();
 

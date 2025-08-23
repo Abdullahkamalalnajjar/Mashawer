@@ -21,6 +21,8 @@ namespace Mashawer.EF
         public DbSet<DeletedRecord> DeletedRecords { get; set; }
         public DbSet<UserUpgradeRequest> UserUpgradeRequests { get; set; }
         public DbSet<Order> Orders { get; set; }
+        public DbSet<Wallet> Wallets { get; set; }
+        public DbSet<WalletTransaction> WalletTransactions { get; set; }
 
     }
 }

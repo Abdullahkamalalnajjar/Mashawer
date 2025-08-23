@@ -1,15 +1,17 @@
-﻿using System.Net.Http.Json;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
+using System.Net.Http.Json;
 
 public class PaymobService
 {
     private readonly HttpClient _http;
     private readonly IConfiguration _config;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public PaymobService(HttpClient http, IConfiguration config)
+    public PaymobService(HttpClient http, IConfiguration config, IUnitOfWork unitOfWork)
     {
         _http = http;
         _config = config;
+        _unitOfWork = unitOfWork;
     }
 
     private string BaseUrl => _config["Paymob:ApiBaseUrl"]!.TrimEnd('/');
@@ -91,18 +93,36 @@ public class PaymobService
     private record PaymentKeyResponse(string token);
 
     // 4A) CARD FLOW: إرجاع IFrame URL
-    public async Task<CardInitResponse> InitCardPaymentAsync(CreateCardPaymentRequest input)
+    public async Task<CardInitResponse> InitCardPaymentAsync(CreateCardPaymentRequest input, int walletId, CancellationToken cancellationToken = default)
     {
-        var auth = await AuthenticateAsync();
-        var merchantOrderId = string.IsNullOrWhiteSpace(input.MerchantOrderId)
-            ? Guid.NewGuid().ToString("N")
-            : input.MerchantOrderId;
+        using var transaction = await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            var auth = await AuthenticateAsync();
+            var merchantOrderId = string.IsNullOrWhiteSpace(input.MerchantOrderId)
+                ? Guid.NewGuid().ToString("N")
+                : input.MerchantOrderId;
 
-        var orderId = await CreateOrderAsync(auth, input.AmountCents, input.Currency, merchantOrderId);
-        var payToken = await CreatePaymentKeyAsync(auth, orderId, input.AmountCents, input.Currency, input.Billing, CardIntegrationId);
-
-        var iframeUrl = $"{BaseUrl}/acceptance/iframes/{IFrameId}?payment_token={payToken}";
-        return new CardInitResponse { OrderId = orderId, PaymentToken = payToken, IframeUrl = iframeUrl };
+            var orderId = await CreateOrderAsync(auth, input.AmountCents, input.Currency, merchantOrderId);
+            var payToken = await CreatePaymentKeyAsync(auth, orderId, input.AmountCents, input.Currency, input.Billing, CardIntegrationId);
+            var iframeUrl = $"{BaseUrl}/acceptance/iframes/{IFrameId}?payment_token={payToken}";
+            var walletTransaction = new WalletTransaction
+            {
+                WalletId = walletId,
+                OrderId = orderId,
+                Amount = input.AmountCents * 100,
+                CreatedAt = DateTime.UtcNow
+            };
+            await _unitOfWork.WalletTransactions.AddAsync(walletTransaction, cancellationToken);
+            await _unitOfWork.CompeleteAsync();
+            await transaction.CommitAsync(cancellationToken);
+            return new CardInitResponse { OrderId = orderId, PaymentToken = payToken, IframeUrl = iframeUrl };
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 
     // 4B) WALLET FLOW: إرجاع Redirect URL

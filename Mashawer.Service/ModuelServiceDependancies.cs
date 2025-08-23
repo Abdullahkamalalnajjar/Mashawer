@@ -18,6 +18,7 @@ namespace Mashawer.Service
             services.AddTransient<IUserUpgradeRequestService, UserUpgradeRequestService>();
             services.AddTransient<IOtpService, OtpService>();
             services.AddTransient<IAdminService, AdminService>();
+            services.AddTransient<ICurrentUserService, CurrentUserService>();
             services.AddTransient<IRepresentativeService, RepresentativeService>();
             services.AddTransient<IOrderService, OrderService>();
             services.AddHttpClient<PaymobService>(client =>

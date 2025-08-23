@@ -9,6 +9,8 @@ namespace Mashawer.EF.Repositories
         public IDeleteRecoredRepository DeleteRecoreds { get; private set; }
         public IUserUpgradeRequestRepository UserUpgradeRequests { get; private set; }
         public IOrderRepository Orders { get; private set; }
+        public IWalletTransactionRepository WalletTransactions { get; private set; }
+        public IWalletRepository Wallets { get; private set; }
 
         public UnitOfWork(ApplicationDbContext context)
         {
@@ -17,6 +19,8 @@ namespace Mashawer.EF.Repositories
             DeleteRecoreds = new DeleteRecoredRepository(_context);
             UserUpgradeRequests = new UserUpgradeRequestRepository(_context);
             Orders = new OrderRepository(_context);
+            WalletTransactions = new WalletTransactionRepository(_context);
+            Wallets = new WalletRepository(_context);
         }
         public async Task<int> CompeleteAsync()
         {

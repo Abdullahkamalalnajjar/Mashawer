@@ -10,6 +10,9 @@ namespace Mashawer.EF
             services.AddTransient<IUserRepository, UserRepository>();
             services.AddTransient<IUserUpgradeRequestRepository, UserUpgradeRequestRepository>();
             services.AddTransient<IDeleteRecoredRepository, DeleteRecoredRepository>();
+            services.AddTransient<IWalletRepository, WalletRepository>();
+            services.AddTransient<IWalletTransactionRepository, WalletTransactionRepository>();
+
 
 
             return services;

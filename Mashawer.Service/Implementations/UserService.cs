@@ -8,7 +8,7 @@ namespace Mashawer.Service.Implementations
         private readonly IRoleService _roleService = roleService;
         private readonly ApplicationDbContext _context = context;
 
-        public async Task<string> CreateUserAsync(string email, string firstName, string LastName, string password, IList<string> roles)
+        public async Task<string> CreateUserAsync(string email, string firstName, string LastName, string password, IList<string> roles, CancellationToken cancellationToken)
         {
             var user = new ApplicationUser
             {
@@ -22,6 +22,7 @@ namespace Mashawer.Service.Implementations
             if (result.Succeeded)
             {
                 await _userManager.AddToRolesAsync(user, roles);
+   
                 return "Created";
             }
             if (result.Errors.Any())
