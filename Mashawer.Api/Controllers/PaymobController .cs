@@ -185,8 +185,6 @@ namespace Mashawer.Api.Controllers
             }
 
             return BadRequest("Invalid response format");
-
-
         }
 
         //[HttpPost("api/v1/paymob/webhook")]
