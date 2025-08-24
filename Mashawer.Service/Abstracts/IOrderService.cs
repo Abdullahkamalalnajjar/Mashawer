@@ -9,6 +9,8 @@ namespace Mashawer.Service.Abstracts
         public Task<IEnumerable<OrderDto>> GetOrdersByClientIdAsync(string clientId);
         public Task<IEnumerable<OrderDto>> GetOrdersByDriverIdAsync(string driverId);
         public Task<string> AddOrderPhotosAsync(int orderId, string? photoBefore, string? photoAfter, CancellationToken cancellationToken);
+        Task<IEnumerable<OrderDto>> GetNearbyPendingOrdersAsync(double lat, double lng, double radiusKm, int take);
+
 
 
     }

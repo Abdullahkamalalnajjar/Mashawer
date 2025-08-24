@@ -2,13 +2,16 @@
 using Mashawer.Core.Features.Orders.Commands.Models;
 using Mashawer.Core.Features.Orders.Queries.Models;
 using Mashawer.Data.AppMetaData;
+using Mashawer.Service.Abstracts;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Mashawer.Api.Controllers
 {
 
-    public class OrderController : AppBaseController
+    public class OrderController(IOrderService _orderService) : AppBaseController
     {
+        private readonly IOrderService orderService = _orderService;
+
         [HttpPost(Router.OrderRouting.Create)]
         public async Task<IActionResult> CreateOrder([FromBody] CreateOrderCommand command)
         {
@@ -56,6 +59,15 @@ namespace Mashawer.Api.Controllers
             return Ok(result);
         }
 
-
+        [HttpGet(Router.OrderRouting.GetNearbyPendingOrders)]
+        public async Task<IActionResult> GetPendingNearbyOrders(
+    [FromQuery] double lat,
+    [FromQuery] double lng,
+    [FromQuery] double radiusKm = 20,
+    [FromQuery] int take = 50)
+        {
+            var data = await _orderService.GetNearbyPendingOrdersAsync(lat, lng, Math.Min(radiusKm, 20), take);
+            return Ok(new { succeeded = true, data });
+        }
     }
 }

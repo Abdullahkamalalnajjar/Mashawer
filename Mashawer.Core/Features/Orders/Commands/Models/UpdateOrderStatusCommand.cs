@@ -11,5 +11,6 @@ namespace Mashawer.Core.Features.Orders.Commands.Models
     {
         public int OrderId { get; set; }
         public OrderStatus NewStatus { get; set; }
+        public string? DriverId { get; set; }
     }
 }

@@ -7,7 +7,7 @@ namespace Mashawer.Service.Implementations
     public class OrderService(IUnitOfWork unitOfWork, UserManager<ApplicationUser> userManager) : IOrderService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
-        private readonly UserManager<ApplicationUser>_userManager = userManager;
+        private readonly UserManager<ApplicationUser> _userManager = userManager;
 
         public async Task<string> CreateOrderAsync(Order order, CancellationToken cancellationToken)
         {
@@ -31,6 +31,8 @@ namespace Mashawer.Service.Implementations
             Price = o.Price,
             DriverId = o.DriverId,
             DriverName = o.Driver.FullName,
+            DriverPhoneNumber = o.Driver != null ? o.Driver.PhoneNumber : null,
+            DriverPhotoUrl = o.Driver != null ? o.Driver.ProfilePictureUrl : null,
             VehicleType = o.VehicleType,
             CancelReason = o.CancelReason.ToString(),
             Status = o.Status.ToString(),
@@ -38,8 +40,8 @@ namespace Mashawer.Service.Implementations
             DeliveryLocation = o.DeliveryLocation,
             ItemPhotoAfter = o.ItemPhotoAfter,
             ItemPhotoBefore = o.ItemPhotoBefore,
-            ItemDescription=o.ItemDescription
-            
+            ItemDescription = o.ItemDescription
+
         };
 
         #endregion 
@@ -59,6 +61,8 @@ namespace Mashawer.Service.Implementations
             if (client == null)
                 return Enumerable.Empty<OrderDto>();
             return await _unitOfWork.Orders.GetTableNoTracking()
+                .Include(o => o.Client)
+                 .Include(o => o.Driver)
                .Where(x => x.ClientId == clientId)
                .Select(OrderToDto)
                .ToListAsync();
@@ -71,6 +75,8 @@ namespace Mashawer.Service.Implementations
             if (driver == null)
                 return Enumerable.Empty<OrderDto>();
             return await _unitOfWork.Orders.GetTableNoTracking()
+                .Include(o => o.Client)
+                 .Include(o => o.Driver)
               .Where(x => x.DriverId == driverId)
               .Select(OrderToDto)
               .ToListAsync();
@@ -93,6 +99,68 @@ namespace Mashawer.Service.Implementations
 
             return "Photos updated successfully";
         }
+
+        public async Task<IEnumerable<OrderDto>> GetNearbyPendingOrdersAsync(double lat, double lng, double radiusKm, int take)
+        {
+            // هات pending + البيانات اللازمة للـ DTO
+            var pending = await _unitOfWork.Orders.GetTableNoTracking()
+                .Where(o => o.Status == OrderStatus.Pending)
+                .Include(o => o.Client)
+                .Include(o => o.Driver)
+                .ToListAsync();
+
+            var nearby = pending
+                .Select(o => new
+                {
+                    Order = o,
+                    Distance = HaversineKm(lat, lng, o.FromLatitude, o.FromLongitude)
+                })
+                .Where(x => x.Distance <= radiusKm)
+                .OrderBy(x => x.Distance)
+                .Take(take)
+                .Select(x => new OrderDto
+                {
+                    Id = x.Order.Id,
+                    FromLatitude = x.Order.FromLatitude,
+                    FromLongitude = x.Order.FromLongitude,
+                    ToLatitude = x.Order.ToLatitude,
+                    ToLongitude = x.Order.ToLongitude,
+                    PickupLocation = x.Order.PickupLocation,
+                    DeliveryLocation = x.Order.DeliveryLocation,
+                    ItemDescription = x.Order.ItemDescription,
+                    Price = x.Order.Price,
+                    VehicleType = x.Order.VehicleType,
+                    EstimatedArrivalTime = x.Order.EstimatedArrivalTime,
+                    Status = x.Order.Status.ToString(),
+                    CreatedAt = x.Order.CreatedAt,
+                    ClientId = x.Order.ClientId,
+                    ClientName = x.Order.Client.FullName,
+                    DriverId = x.Order.DriverId,
+                    DriverName = x.Order.Driver?.FullName,
+                    DriverPhoneNumber = x.Order.Driver?.PhoneNumber,
+                    DriverPhotoUrl = x.Order.Driver?.ProfilePictureUrl,
+                    ItemPhotoAfter = x.Order.ItemPhotoAfter,
+                    ItemPhotoBefore = x.Order.ItemPhotoBefore
+                })
+                .ToList();
+
+            return nearby;
+        }
+
+        private static double HaversineKm(double lat1, double lon1, double lat2, double lon2)
+        {
+            const double R = 6371.0;
+            double dLat = ToRad(lat2 - lat1);
+            double dLon = ToRad(lon2 - lon1);
+            double a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                       Math.Cos(ToRad(lat1)) * Math.Cos(ToRad(lat2)) *
+                       Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+            double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+            return R * c;
+        }
+        private static double ToRad(double deg) => deg * (Math.PI / 180.0);
+
+
     }
-    }
+}
 
