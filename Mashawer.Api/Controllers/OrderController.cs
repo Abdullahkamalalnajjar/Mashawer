@@ -69,5 +69,11 @@ namespace Mashawer.Api.Controllers
             var data = await _orderService.GetNearbyPendingOrdersAsync(lat, lng, Math.Min(radiusKm, 20), take);
             return Ok(new { succeeded = true, data });
         }
+        [HttpGet("test")]
+        public async Task<IActionResult> Test()
+        {
+           await orderService.TestingAsync();
+            return Ok(new { message = "Test method executed." });
+        }
     }
 }

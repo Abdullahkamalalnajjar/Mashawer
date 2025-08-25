@@ -1,5 +1,4 @@
-﻿using Azure;
-using Mashawer.Data.Entities.ClasssOfOrder;
+﻿using Mashawer.Data.Entities.ClasssOfOrder;
 using System.Linq.Expressions;
 
 namespace Mashawer.Service.Implementations
@@ -160,7 +159,15 @@ namespace Mashawer.Service.Implementations
         }
         private static double ToRad(double deg) => deg * (Math.PI / 180.0);
 
+        public async Task TestingAsync()
+        {
+            var order = await _unitOfWork.Orders.GetTableAsTracking()
+                .FirstOrDefaultAsync(x => x.Id == 61);
+            order!.Status = OrderStatus.Completed;
+             _unitOfWork.Orders.Update(order);
+            await _unitOfWork.CompeleteAsync();
 
+        }
     }
 }
 

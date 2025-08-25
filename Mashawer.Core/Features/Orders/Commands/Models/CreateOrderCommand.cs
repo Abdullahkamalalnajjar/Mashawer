@@ -19,6 +19,6 @@ namespace Mashawer.Core.Features.Orders.Commands.Models
         public string VehicleType { get; set; } // مثل: موتوسيكل
         public DateTime EstimatedArrivalTime { get; set; }
         public string ClientId { get; set; } // معرف المستخدم الذي قام بإنشاء الطلب
-        public string? DriverId { get; set; } // معرف السائق الذي تم تعيينه للطلب (إن وجد)
+                                             //  public string? DriverId { get; set; } // معرف السائق الذي تم تعيينه للطلب (إن وجد)
     }
 }

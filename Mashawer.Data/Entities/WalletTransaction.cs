@@ -10,6 +10,7 @@
         public string Type { get; set; } = "Deposit";   // Deposit, Withdraw
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? PaidAt { get; set; }
-        public long OrderId { get; set; }  
+        public long OrderId { get; set; }
+        public string? MerchantOrderId { get; set; }
     }
 }

@@ -19,7 +19,7 @@ namespace Mashawer.Data.Interfaces
         Task<IEnumerable<T>> FindAllAsync(Expression<Func<T, bool>> criteria, int skip, int take);
         Task<IEnumerable<T>> FindAllAsync(Expression<Func<T, bool>> criteria, int? skip, int? take, Expression<Func<T, object>> orderBy = null, string orderByDirection = OrderBy.Ascending);
         T Add(T entity);
-        Task<T> AddAsync(T entity, CancellationToken cancellationToken);
+        Task<T> AddAsync(T entity, CancellationToken cancellationToken = default);
         IEnumerable<T> AddRange(IEnumerable<T> entities);
         Task<IEnumerable<T>> AddRangeAsync(IEnumerable<T> entities);
         T Update(T entity);

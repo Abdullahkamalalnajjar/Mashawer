@@ -1,4 +1,5 @@
 ﻿using Mashawer.Api.Base;
+using Mashawer.Data.Entities;
 using Mashawer.Data.Interfaces;
 using Mashawer.Service.Abstracts;
 using Microsoft.AspNetCore.Authorization;
@@ -7,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using static Mashawer.Data.Dtos.PaymobDto;
 
 namespace Mashawer.Api.Controllers
@@ -129,8 +131,6 @@ namespace Mashawer.Api.Controllers
             return dict;
         }
 
-
-
         // ✅ 4) (اختياري) Return URL بعد الكارد (لو حابب ترجّع المستخدم لصفحة شكراً)
         [HttpGet("return")]
         public IActionResult Return([FromQuery] Dictionary<string, string> qs)
@@ -187,57 +187,80 @@ namespace Mashawer.Api.Controllers
             return BadRequest("Invalid response format");
         }
 
-        //[HttpPost("api/v1/paymob/webhook")]
-        //public async Task<IActionResult> PaymobWebhook([FromBody] PaymobWebhookDto payload)
-        //{
-        //    if (payload.Type == "TRANSACTION" && payload.Obj.Success)
-        //    {
-        //        var merchantOrderId = payload.Obj.Order.MerchantOrderId;
-        //        var amount = payload.Obj.AmountCents / 100m;
+        public class PaymobWebhookDto
+        {
+            [JsonPropertyName("type")]
 
-        //        // ✅ حدّث حالة الدفع
-        //        var payment = await _context.Payments
-        //            .FirstOrDefaultAsync(p => p.MerchantOrderId == merchantOrderId);
+            public string Type { get; set; }
+            [JsonPropertyName("obj")]
 
-        //        if (payment != null && !payment.IsPaid)
-        //        {
-        //            payment.IsPaid = true;
-        //            payment.UpdatedAt = DateTime.UtcNow;
+            public PaymobObj Obj { get; set; }
+        }
 
-        //            // ✅ زوّد رصيد المحفظة
-        //            var wallet = await _context.Wallets
-        //                .FirstOrDefaultAsync(w => w.CustomerId == payment.CustomerId);
+        public class PaymobObj
+        {
+            public bool Success { get; set; }
+            public long AmountCents { get; set; }
+            public PaymobOrder Order { get; set; }
+        }
 
-        //            if (wallet == null)
-        //            {
-        //                wallet = new Wallet
-        //                {
-        //                    CustomerId = payment.CustomerId,
-        //                    Balance = 0,
-        //                    CreatedAt = DateTime.UtcNow
-        //                };
-        //                _context.Wallets.Add(wallet);
-        //            }
+        public class PaymobOrder
+        {
+            public long Id { get; set; }
+            public string MerchantOrderId { get; set; }
+        }
 
-        //            wallet.Balance += amount;
 
-        //            // ✅ سجل العملية في WalletTransaction
-        //            var transaction = new WalletTransaction
-        //            {
-        //                WalletId = wallet.Id,
-        //                Amount = amount,
-        //                Type = "Deposit",
-        //                Description = $"Paymob payment for Order {merchantOrderId}",
-        //                CreatedAt = DateTime.UtcNow
-        //            };
-        //            _context.WalletTransactions.Add(transaction);
+        [HttpPost("api/v1/paymob/webhook")]
+        public async Task<IActionResult> PaymobWebhook([FromBody] PaymobWebhookDto payload)
+        {
+            if (payload.Type == "TRANSACTION" && payload.Obj.Success)
+            {
+                var merchantOrderId = payload.Obj.Order.MerchantOrderId;
+                var amount = payload.Obj.AmountCents / 100m;
 
-        //            await _context.SaveChangesAsync();
-        //        }
-        //    }
+                // ✅ حدّث حالة الدفع
+                var walletTransaction = await _unitOfWork.WalletTransactions.GetTableAsTracking()
+                    .FirstOrDefaultAsync(p => p.MerchantOrderId == merchantOrderId);
 
-        //    return Ok(); // لازم ترجع 200 عشان Paymob يعتبر الـ Webhook ناجح
-        //}
+                if (walletTransaction != null && walletTransaction.Status != "Paid")
+                {
+                    walletTransaction.Status = "Paid";
+                    walletTransaction.PaidAt = DateTime.UtcNow;
+
+                    // ✅ هات المحفظة المرتبطة بالـ Transaction
+                    var wallet = await _unitOfWork.Wallets.GetTableAsTracking()
+                        .FirstOrDefaultAsync(w => w.Id == walletTransaction.WalletId);
+
+                    if (wallet == null)
+                    {
+                        // في حالة مفيش Wallet (مش منطقي غالباً لأن WalletId موجود في الـ Transaction)
+                        return BadRequest("Wallet not found.");
+                    }
+
+                    // ✅ زوّد رصيد المحفظة
+                    wallet.Balance += amount;
+
+                    // ✅ سجل العملية في WalletTransaction جديدة (لو عايز تسجل كإيداع منفصل)
+                    var depositTransaction = new WalletTransaction
+                    {
+                        WalletId = wallet.Id,
+                        Amount = amount,
+                        Status = "Paid",
+                        Type = "Deposit",
+                        CreatedAt = DateTime.UtcNow,
+                        OrderId = payload.Obj.Order.Id,
+                        MerchantOrderId = merchantOrderId
+                    };
+                    await _unitOfWork.WalletTransactions.AddAsync(depositTransaction);
+
+                    await _unitOfWork.CompeleteAsync();
+                }
+            }
+
+            return Ok(); // لازم ترجع 200 عشان Paymob يعتبر الـ Webhook ناجح
+        }
+
 
 
     }

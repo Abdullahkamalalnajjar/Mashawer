@@ -109,6 +109,7 @@ public class PaymobService
             var walletTransaction = new WalletTransaction
             {
                 WalletId = walletId,
+                MerchantOrderId = merchantOrderId,
                 OrderId = orderId,
                 Amount = input.AmountCents * 100,
                 CreatedAt = DateTime.UtcNow
