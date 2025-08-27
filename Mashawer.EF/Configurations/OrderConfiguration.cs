@@ -14,6 +14,7 @@ namespace Mashawer.EF.Configurations
             builder.Property(s => s.CancelReason).HasConversion(o => o.ToString(), o => (CancelReason)Enum.Parse(typeof(CancelReason), o));
 
             builder.Property(p => p.Price).HasColumnType("decimal(18,2)");
+            builder.Property(p => p.PriceAfterDeducation).HasColumnType("decimal(18,2)");
         }
     }
 }

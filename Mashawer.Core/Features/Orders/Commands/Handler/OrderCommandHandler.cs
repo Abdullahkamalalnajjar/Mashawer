@@ -1,12 +1,10 @@
 ﻿using Mashawer.Core.Features.Orders.Commands.Models;
 using Mashawer.Data.Entities.ClasssOfOrder;
 using Mashawer.Data.Enums;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 
 namespace Mashawer.Core.Features.Orders.Commands.Handler
 {
-    public class OrderCommandHandler(IOrderService orderService, IMapper mapper, IUnitOfWork unitOfWork, UserManager<ApplicationUser> _userManager , IHttpContextAccessor httpContextAccessor) : ResponseHandler,
+    public class OrderCommandHandler(IOrderService orderService, IMapper mapper, IUnitOfWork unitOfWork, UserManager<ApplicationUser> _userManager, IHttpContextAccessor httpContextAccessor) : ResponseHandler,
         IRequestHandler<CreateOrderCommand, Response<string>>,
         IRequestHandler<UpdateOrderStatusCommand, Response<string>>,
         IRequestHandler<AddOrderPhotosCommand, Response<string>>
@@ -19,7 +17,13 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
 
         public async Task<Response<string>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
         {
+            var generalSetting = await _unitOfWork.GeneralSettings.GetTableNoTracking().FirstOrDefaultAsync();
             var order = _mapper.Map<Order>(request);
+            if (generalSetting != null)
+            {
+
+                order.PriceAfterDeducation = (order.Price) - (order.Price * generalSetting.DiscountPercentage);
+            }
             var result = await _orderService.CreateOrderAsync(order, cancellationToken);
             if (result == "Created")
             {
@@ -74,7 +78,7 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
                     return BadRequest<string>("Driver not found.");
 
                 order.DriverId = driver.Id;
-               
+
             }
 
             order.Status = request.NewStatus;

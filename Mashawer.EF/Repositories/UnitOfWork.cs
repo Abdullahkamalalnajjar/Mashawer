@@ -12,6 +12,8 @@ namespace Mashawer.EF.Repositories
         public IWalletTransactionRepository WalletTransactions { get; private set; }
         public IWalletRepository Wallets { get; private set; }
 
+        public IGeneralSettingRepository GeneralSettings { get; private set; }
+
         public UnitOfWork(ApplicationDbContext context)
         {
             _context = context;
@@ -21,6 +23,7 @@ namespace Mashawer.EF.Repositories
             Orders = new OrderRepository(_context);
             WalletTransactions = new WalletTransactionRepository(_context);
             Wallets = new WalletRepository(_context);
+            GeneralSettings = new GeneralSettingRepository(_context);
         }
         public async Task<int> CompeleteAsync()
         {

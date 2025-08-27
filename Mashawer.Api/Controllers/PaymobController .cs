@@ -190,25 +190,33 @@ namespace Mashawer.Api.Controllers
         public class PaymobWebhookDto
         {
             [JsonPropertyName("type")]
-
             public string Type { get; set; }
-            [JsonPropertyName("obj")]
 
+            [JsonPropertyName("obj")]
             public PaymobObj Obj { get; set; }
         }
 
         public class PaymobObj
         {
+            [JsonPropertyName("success")]
             public bool Success { get; set; }
+
+            [JsonPropertyName("amount_cents")]
             public long AmountCents { get; set; }
+
+            [JsonPropertyName("order")]
             public PaymobOrder Order { get; set; }
         }
 
         public class PaymobOrder
         {
+            [JsonPropertyName("id")]
             public long Id { get; set; }
+
+            [JsonPropertyName("merchant_order_id")]
             public string MerchantOrderId { get; set; }
         }
+
 
 
         [HttpPost("api/v1/paymob/webhook")]
@@ -241,18 +249,7 @@ namespace Mashawer.Api.Controllers
                     // ✅ زوّد رصيد المحفظة
                     wallet.Balance += amount;
 
-                    // ✅ سجل العملية في WalletTransaction جديدة (لو عايز تسجل كإيداع منفصل)
-                    var depositTransaction = new WalletTransaction
-                    {
-                        WalletId = wallet.Id,
-                        Amount = amount,
-                        Status = "Paid",
-                        Type = "Deposit",
-                        CreatedAt = DateTime.UtcNow,
-                        OrderId = payload.Obj.Order.Id,
-                        MerchantOrderId = merchantOrderId
-                    };
-                    await _unitOfWork.WalletTransactions.AddAsync(depositTransaction);
+                
 
                     await _unitOfWork.CompeleteAsync();
                 }

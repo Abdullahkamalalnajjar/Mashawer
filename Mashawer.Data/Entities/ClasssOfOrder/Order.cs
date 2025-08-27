@@ -24,6 +24,7 @@ namespace Mashawer.Data.Entities.ClasssOfOrder
 
         // تفاصيل الطلب
         public decimal Price { get; set; }
+        public decimal? PriceAfterDeducation { get; set; } // السعر بعد خصم نسبة التطبيق (إن وجدت) 
         public string VehicleType { get; set; } // مثل: موتوسيكل
         public DateTime EstimatedArrivalTime { get; set; }
 

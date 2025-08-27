@@ -14,7 +14,7 @@
             public const string GoogleSignIn = Prefix + "GoogleSignIn";
             public const string GoogleLoginCallback = Prefix + "GoogleLoginCallback";
         }
-   
+
         public static class RepresentativeRouting
         {
             private const string Prefix = Rule + "/" + "Representative/";
@@ -131,6 +131,14 @@
             public const string MangeUserClaims = Prefix + "mange-user-calims/{userId}";
             public const string UpdateRole = Prefix + "UpdateRole";
             public const string UpdateClaims = Prefix + "UpdateClaims";
+
+        }
+        public static class GeneralSettingRouting
+        {
+            private const string Prefix = Rule + "/" + "GeneralSetting/";
+            public const string GetGeneralSetting = Prefix + "GetGeneralSetting";
+            public const string Create = Prefix + "Create";
+            public const string Edit = Prefix + "Edit";
 
         }
     }

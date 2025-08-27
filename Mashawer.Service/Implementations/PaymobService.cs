@@ -90,6 +90,7 @@ public class PaymobService
         return json!.token;
     }
 
+
     private record PaymentKeyResponse(string token);
 
     // 4A) CARD FLOW: إرجاع IFrame URL
@@ -111,7 +112,7 @@ public class PaymobService
                 WalletId = walletId,
                 MerchantOrderId = merchantOrderId,
                 OrderId = orderId,
-                Amount = input.AmountCents * 100,
+                Amount = input.AmountCents,
                 CreatedAt = DateTime.UtcNow
             };
             await _unitOfWork.WalletTransactions.AddAsync(walletTransaction, cancellationToken);

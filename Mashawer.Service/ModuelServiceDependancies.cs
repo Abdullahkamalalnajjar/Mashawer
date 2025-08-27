@@ -21,6 +21,7 @@ namespace Mashawer.Service
             services.AddTransient<ICurrentUserService, CurrentUserService>();
             services.AddTransient<IRepresentativeService, RepresentativeService>();
             services.AddTransient<IOrderService, OrderService>();
+            services.AddTransient<IGeneralSettingService, GeneralSettingService>();
             services.AddHttpClient<PaymobService>(client =>
             {
                 client.Timeout = TimeSpan.FromSeconds(60);

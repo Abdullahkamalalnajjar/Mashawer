@@ -27,9 +27,10 @@ namespace Mashawer.Data.Dtos
 
         // تفاصيل الطلب
         public decimal Price { get; set; }
+        public decimal? PriceAfterDeducation { get; set; } // السعر بعد خصم نسبة التطبيق (إن وجدت)
         public string VehicleType { get; set; } // مثل: موتوسيكل
         public DateTime EstimatedArrivalTime { get; set; }
-      
+
         // حالة الطلب
         public string Status { get; set; }
 
