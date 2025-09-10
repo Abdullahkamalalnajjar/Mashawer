@@ -8,6 +8,7 @@ namespace Mashawer.Data.Interfaces
         IDeleteRecoredRepository DeleteRecoreds { get; }
         IUserUpgradeRequestRepository UserUpgradeRequests { get; }
         IOrderRepository Orders { get; }
+        IUserNotificationRepository Notifications { get; }
         IWalletTransactionRepository WalletTransactions { get; }
         IWalletRepository Wallets { get; }
         IGeneralSettingRepository GeneralSettings { get; }

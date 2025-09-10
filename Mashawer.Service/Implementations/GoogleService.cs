@@ -70,7 +70,8 @@ namespace Mashawer.Service.Implementations
                 RepresentativeAddress: user.RepresentativeAddress,
                 TokenExpiresIn: expiresIn,
                 RefreshToken: refreshToken,
-                RefreshTokenExpiresIn: refreshTokenExpiresIn
+                RefreshTokenExpiresIn: refreshTokenExpiresIn,
+                FCMToken: user.FCMToken
             );
 
             return AuthResult.Success(response);

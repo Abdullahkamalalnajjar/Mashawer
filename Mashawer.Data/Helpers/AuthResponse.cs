@@ -13,6 +13,7 @@
         string UserType,
         string? AgentAddress,
         string? RepresentativeAddress,
-        DateTime RefreshTokenExpiresIn
+        DateTime RefreshTokenExpiresIn,
+        string? FCMToken
  );
 }

@@ -4,12 +4,13 @@ using Mashawer.Data.Enums;
 
 namespace Mashawer.Core.Features.Orders.Commands.Handler
 {
-    public class OrderCommandHandler(IOrderService orderService, IMapper mapper, IUnitOfWork unitOfWork, UserManager<ApplicationUser> _userManager, IHttpContextAccessor httpContextAccessor) : ResponseHandler,
+    public class OrderCommandHandler(IOrderService orderService, INotificationService notificationService, IMapper mapper, IUnitOfWork unitOfWork, UserManager<ApplicationUser> _userManager, IHttpContextAccessor httpContextAccessor) : ResponseHandler,
         IRequestHandler<CreateOrderCommand, Response<string>>,
         IRequestHandler<UpdateOrderStatusCommand, Response<string>>,
         IRequestHandler<AddOrderPhotosCommand, Response<string>>
     {
         private readonly IOrderService _orderService = orderService;
+        private readonly INotificationService _notificationService = notificationService;
         private readonly IMapper _mapper = mapper;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> userManager = _userManager;
@@ -35,36 +36,11 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
 
         public async Task<Response<string>> Handle(UpdateOrderStatusCommand request, CancellationToken cancellationToken)
         {
-            //var order = await _unitOfWork.Orders.GetByIdAsync(request.OrderId);
 
-            //if (order == null)
-            //    return NotFound<string>("Order not found");
-
-            //if (order.Status == OrderStatus.Completed)
-            //    return BadRequest<string>("Cannot modify a completed order.");
-
-            //if (request.NewStatus != OrderStatus.Confirmed && request.NewStatus != OrderStatus.Cancelled)
-            //    return BadRequest<string>("Invalid status update. Allowed: Confirmed or Cancelled.");
-
-            //order.Status = request.NewStatus;
-            //await _unitOfWork.CompeleteAsync();
-
-            //return Success("Order status updated successfully");
-
-            var order = await _unitOfWork.Orders.GetByIdAsync(request.OrderId);
+            var order = await _unitOfWork.Orders.GetTableAsTracking().Where(x => x.Id == request.OrderId).Include(c => c.Client).FirstOrDefaultAsync();
 
             if (order == null)
                 return NotFound<string>("Order not found");
-
-            if (order.Status == OrderStatus.Completed)
-                return BadRequest<string>("Cannot modify a completed order.");
-
-            if (request.NewStatus != OrderStatus.Confirmed && request.NewStatus != OrderStatus.Cancelled)
-                return BadRequest<string>("Invalid status update. Allowed: Confirmed or Cancelled.");
-
-            // ✅ تحقق إن الأوردر لسه Pending قبل ما يتم التأكيد
-            if (order.Status != OrderStatus.Pending)
-                return BadRequest<string>("Order already accepted by another driver.");
 
             // ✅ لو السواق وافق، لازم نضيف DriverId
             if (request.NewStatus == OrderStatus.Confirmed)
@@ -82,6 +58,25 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
             }
 
             order.Status = request.NewStatus;
+            if (!string.IsNullOrEmpty(order.Client.FCMToken))
+            {
+                await _notificationService.SendNotificationAsync(
+                    userId: order.ClientId,
+                    fcmToken: order.Client.FCMToken,
+                    title: request.NewStatus == OrderStatus.Confirmed ? "Order Confirmed" : "Order Cancelled",
+                    body: request.NewStatus == OrderStatus.Confirmed ? "Your order has been confirmed by a driver." : "Your order has been cancelled.",
+                    cancellationToken: cancellationToken
+                );
+                var notification = new UserNotification
+                {
+                    UserId = order.ClientId,
+                    Title = request.NewStatus == OrderStatus.Confirmed ? "Order Confirmed" : "Order Cancelled",
+                    Body = request.NewStatus == OrderStatus.Confirmed ? "Your order has been confirmed by a driver." : "Your order has been cancelled.",
+                    Timestamp = DateTime.UtcNow,
+                    IsRead = false
+                };
+                await _unitOfWork.Notifications.AddAsync(notification);
+            }
             await _unitOfWork.CompeleteAsync();
 
             return Success("Order status updated successfully");

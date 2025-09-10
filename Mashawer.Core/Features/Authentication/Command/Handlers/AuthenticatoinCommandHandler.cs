@@ -43,6 +43,13 @@ namespace Mashawer.Core.Features.Authentication.Command.Handlers
         }
         public async Task<Response<AuthResponse>> Handle(SignInCommand request, CancellationToken cancellationToken)
         {
+
+            var user = await _userManager.FindByEmailAsync(request.Email);
+            if (user is null)
+                return NotFound<AuthResponse>("User not found");
+            user.FCMToken = request.FCMToken;
+            await _userManager.UpdateAsync(user);
+
             var result = await _authService.GetTokenAsync(request.Email, request.Password, cancellationToken);
 
             if (!string.IsNullOrEmpty(result.ErrorMessage))
@@ -51,7 +58,6 @@ namespace Mashawer.Core.Features.Authentication.Command.Handlers
                     return BadRequest<AuthResponse>("Email is not confirmed. Please confirm your email first.");
                 return BadRequest<AuthResponse>(result.ErrorMessage);
             }
-
             return Success(result.Response!, "Login successful");
         }
 

@@ -1,3 +1,5 @@
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 using Mashawer.Api.Configurations.Swagger;
 using Mashawer.Core;
 using Mashawer.Core.Middleware;
@@ -20,6 +22,21 @@ builder.Services.AddServiceDependencies()
    .AddServiceRegisteration(builder.Configuration);
 
 builder.Services.AddSwagger();
+#endregion
+#region Notification
+try
+{
+    string pathToCredentials = Path.Combine(Environment.CurrentDirectory, "wwwroot", "shibenshop-notification-firebase-adminsdk-fbsvc-0663595be9.json");
+    FirebaseApp.Create(new AppOptions()
+    {
+        Credential = GoogleCredential.FromFile(pathToCredentials),
+    });
+}
+catch (Exception ex)
+{
+    Console.WriteLine("Error initializing Firebase: " + ex.Message);
+    throw;
+}
 #endregion
 #region Connection
 builder.Services.AddDbContext<ApplicationDbContext>(opt =>

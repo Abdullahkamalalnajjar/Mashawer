@@ -86,6 +86,14 @@
             public const string SendEmail = Prefix + "SendEmail";
 
         }
+        public static class NotificationRouting
+        {
+            private const string Prefix = Rule + "/" + "Notification/";
+            public const string GetNotificationsForUser = Prefix + "GetNotificationsForUser";
+            public const string MarkAsRead = Prefix + "MarkAsRead/{notificationId}";
+            public const string DeleteNotification = Prefix + "DeleteNotification/{notificationId}";
+            public const string DeleteAllNotifications = Prefix + "DeleteAllNotifications";
+        }
         public static class UserRouting
         {
             private const string Prefix = Rule + "/" + "AppUser/";

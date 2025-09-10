@@ -24,6 +24,7 @@ namespace Mashawer.EF
         public DbSet<Wallet> Wallets { get; set; }
         public DbSet<WalletTransaction> WalletTransactions { get; set; }
         public DbSet<GeneralSetting> GeneralSettings { get; set; }
+        public DbSet<UserNotification> UserNotifications { get; set; }
 
     }
 }
