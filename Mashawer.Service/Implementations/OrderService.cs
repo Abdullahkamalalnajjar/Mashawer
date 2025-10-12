@@ -30,6 +30,9 @@ namespace Mashawer.Service.Implementations
             Price = o.Price,
             DriverId = o.DriverId,
             DriverName = o.Driver.FullName,
+            DriverImageUrl = o.Driver != null ? o.Driver.ProfilePictureUrl : null,
+            VehicleNumber = o.Driver != null ? o.Driver.VehicleNumber : null,
+            VehicleTypeOfDriver = o.Driver != null ? o.Driver.VehicleType : null,
             DriverPhoneNumber = o.Driver != null ? o.Driver.PhoneNumber : null,
             DriverPhotoUrl = o.Driver != null ? o.Driver.ProfilePictureUrl : null,
             VehicleType = o.VehicleType,
@@ -139,7 +142,9 @@ namespace Mashawer.Service.Implementations
                     DriverPhoneNumber = x.Order.Driver?.PhoneNumber,
                     DriverPhotoUrl = x.Order.Driver?.ProfilePictureUrl,
                     ItemPhotoAfter = x.Order.ItemPhotoAfter,
-                    ItemPhotoBefore = x.Order.ItemPhotoBefore
+                    ItemPhotoBefore = x.Order.ItemPhotoBefore,
+                    VehicleNumber = x.Order.Driver.VehicleNumber,
+                    VehicleTypeOfDriver = x.Order.Driver.VehicleType,
                 })
                 .ToList();
 
@@ -164,9 +169,17 @@ namespace Mashawer.Service.Implementations
             var order = await _unitOfWork.Orders.GetTableAsTracking()
                 .FirstOrDefaultAsync(x => x.Id == 61);
             order!.Status = OrderStatus.Completed;
-             _unitOfWork.Orders.Update(order);
+            _unitOfWork.Orders.Update(order);
             await _unitOfWork.CompeleteAsync();
 
+        }
+
+        public async Task<OrderDto?> GetOrderByIdAsync(int orderId)
+        {
+            return await _unitOfWork.Orders.GetTableNoTracking()
+                .Where(x => x.Id == orderId)
+                .Select(OrderToDto)
+                .FirstOrDefaultAsync();
         }
     }
 }

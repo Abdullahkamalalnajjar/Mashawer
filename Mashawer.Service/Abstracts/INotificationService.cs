@@ -2,7 +2,7 @@
 {
     public interface INotificationService
     {
-        Task SendNotificationAsync(string userId, string fcmToken, string title, string body, CancellationToken cancellationToken);
+        Task SendNotificationAsync(string userId, string fcmToken, string title, string body, CancellationToken cancellationToken, int? orderId = null);
         Task<IEnumerable<NotificationResponse>> GetNotificationForUserAsync(string userId);
         Task<string> DeleteAllNotificationAsync(string userId);
         Task<string> DeleteNotificationAsync(int notificationId, string userId);

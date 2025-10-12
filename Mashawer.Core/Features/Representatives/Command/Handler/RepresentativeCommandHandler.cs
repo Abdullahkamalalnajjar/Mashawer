@@ -1,15 +1,10 @@
 ﻿using Mashawer.Core.Features.Representatives.Command.Models;
-using Mashawer.Core.Features.Representatives.Queries.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Mashawer.Core.Features.Representatives.Command.Handler
 {
     public class RepresentativeCommandHandler(IRepresentativeService representativeService) : ResponseHandler,
-        IRequestHandler<UpdateRepresentativesLocationCommand, Response<string>>
+        IRequestHandler<UpdateRepresentativesLocationCommand, Response<string>>,
+        IRequestHandler<UpdateRepresentativeInfoCommand, Response<string>>
     {
         private readonly IRepresentativeService _representativeService = representativeService;
 
@@ -18,8 +13,15 @@ namespace Mashawer.Core.Features.Representatives.Command.Handler
             var result = await _representativeService.UpdateLocation(request.UserId, request.RepresentativeLatitude, request.RepresentativeLongitude);
             if (result == "NotFound")
                 return NotFound<string>("NotFound");
-            return Success<string>(result); 
-               
+            return Success<string>(result);
+
+        }
+        public async Task<Response<string>> Handle(UpdateRepresentativeInfoCommand request, CancellationToken cancellationToken)
+        {
+            var result = await _representativeService.UpdateInfo(request.RepresentativeId, request.VehicleUrl!, request.VehicleNumber!, request.VehicleType!);
+            if (result == "NotFound")
+                return (NotFound<string>("NotFound"));
+            return (Success<string>(result));
         }
     }
 

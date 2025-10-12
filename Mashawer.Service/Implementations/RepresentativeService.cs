@@ -1,10 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
-
-namespace Mashawer.Service.Implementations
+﻿namespace Mashawer.Service.Implementations
 {
-    public class RepresentativeService(IUnitOfWork unitOfWork) : IRepresentativeService
+    public class RepresentativeService(IUnitOfWork unitOfWork, IHttpContextAccessor httpContextAccessor) : IRepresentativeService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
+        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
 
         public async Task<IEnumerable<RepresentativeDTO>> GetAllRepresentativesByAddressAsync(string address)
         {
@@ -83,11 +82,9 @@ namespace Mashawer.Service.Implementations
             double deliveryPrice = Math.Round(distance * pricePerKm, 2);
             return deliveryPrice;
         }
-
-  
         public async Task<string> UpdateLocation(string userId, double latitude, double longitude)
         {
-            var user = await _unitOfWork.Users.GetTableAsTracking().FirstOrDefaultAsync(x=>x.Id==userId);
+            var user = await _unitOfWork.Users.GetTableAsTracking().FirstOrDefaultAsync(x => x.Id == userId);
             if (user == null) return "NotFound";
 
             user.RepresentativeLatitude = latitude;
@@ -99,6 +96,16 @@ namespace Mashawer.Service.Implementations
             return "Updated";
         }
 
-
+        public async Task<string> UpdateInfo(string representativeId, IFormFile vehicalPicture, string vehicalNumber, string type)
+        {
+            var user = await _unitOfWork.Users.GetTableAsTracking().FirstOrDefaultAsync(x => x.Id == representativeId);
+            if (user == null) return "NotFound";
+            user.VehicleNumber = vehicalNumber;
+            user.VehicleType = type;
+            user.VehiclePictureUrl = FileHelper.SaveFile(vehicalPicture, "VehicalPicture", _httpContextAccessor);
+            _unitOfWork.Users.Update(user);
+            await _unitOfWork.CompeleteAsync();
+            return "Updated";
+        }
     }
 }

@@ -26,6 +26,12 @@ namespace Mashawer.Api.Controllers
             return Ok(new { message = result });
         }
 
+        [HttpGet(Router.OrderRouting.GetById)]
+        public async Task<IActionResult> GetOrderById([FromRoute] int id)
+        {
+            var result = await Mediator.Send(new GetOrderByIdQuery(id));
+            return NewResult(result);
+        }
 
         [HttpGet(Router.OrderRouting.List)]
         public async Task<IActionResult> GetOrders()
@@ -72,7 +78,7 @@ namespace Mashawer.Api.Controllers
         [HttpGet("test")]
         public async Task<IActionResult> Test()
         {
-           await orderService.TestingAsync();
+            await orderService.TestingAsync();
             return Ok(new { message = "Test method executed." });
         }
     }

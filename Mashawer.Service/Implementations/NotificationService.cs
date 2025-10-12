@@ -59,7 +59,7 @@ namespace Mashawer.Service.Implementations
             return "MarkedAsRead";
         }
 
-        public async Task SendNotificationAsync(string userId, string fcmToken, string title, string body, CancellationToken cancellationToken)
+        public async Task SendNotificationAsync(string userId, string fcmToken, string title, string body, CancellationToken cancellationToken, int? orderId = null)
         {
             TimeZoneInfo egyptZone = TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
             DateTime egyptTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, egyptZone);
@@ -69,13 +69,17 @@ namespace Mashawer.Service.Implementations
                 Token = fcmToken,
                 Data = new Dictionary<string, string>
                 {
-                    { "status", "Notification" }
+                    { "status", "Notification" },
+                   { "orderId", orderId?.ToString() ?? string.Empty }
                 },
                 Notification = new Notification
                 {
                     Title = title,
                     Body = body,
-                }
+
+
+                },
+
             };
             try
             {

@@ -27,6 +27,7 @@
             public const string GetApprovedRepresentativesByAddress = Prefix + "GetApprovedRepresentativesByAddress/{address}";
             public const string NearestRepresentative = Prefix + "NearestRepresentative";
             public const string UpdateRepresentativeLivelocation = Prefix + "UpdateRepresentativeLivelocation";
+            public const string UpdateRepresentativeInfo = Prefix + "UpdateRepresentativeInfo";
 
         }
         public static class UserUpgradeRequestRouting

@@ -1,13 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using  Mashawer.Data.Dtos;
-using static Mashawer.Data.Dtos.PaymobDto;
-namespace Mashawer.Service.Abstracts
+﻿namespace Mashawer.Service.Abstracts
 {
-   
+
     public interface IPaymobService
     {
         Task<string> AuthenticateAsync();

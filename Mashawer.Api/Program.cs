@@ -26,7 +26,7 @@ builder.Services.AddSwagger();
 #region Notification
 try
 {
-    string pathToCredentials = Path.Combine(Environment.CurrentDirectory, "wwwroot", "shibenshop-notification-firebase-adminsdk-fbsvc-0663595be9.json");
+    string pathToCredentials = Path.Combine(Environment.CurrentDirectory, "wwwroot", "mashawer-a1a0b-firebase-adminsdk-fbsvc-41bd708c07.json");
     FirebaseApp.Create(new AppOptions()
     {
         Credential = GoogleCredential.FromFile(pathToCredentials),

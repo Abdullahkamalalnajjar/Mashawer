@@ -45,6 +45,9 @@ namespace Mashawer.Data.Dtos
         public string? DriverPhoneNumber { get; set; }
         public string? DriverPhotoUrl { get; set; }
         public string? DriverName { get; set; } // السائق الذي تم تعيينه للطلب (إن وجد)
+        public string? DriverImageUrl { get; set; } // صورة السائق (إن وجد)
+        public string? VehicleNumber { get; set; } // رقم المركبة للسائق (إن وجد)
+        public string? VehicleTypeOfDriver { get; set; } // نوع المركبة للسائق (إن وجد)
         public string? ItemPhotoBefore { get; set; }
         public string? ItemPhotoAfter { get; set; }
     }

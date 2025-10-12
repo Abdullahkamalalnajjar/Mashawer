@@ -56,7 +56,11 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
                 order.DriverId = driver.Id;
 
             }
-
+            // if order already confirmed
+            if (order.Status == OrderStatus.Confirmed && request.NewStatus == OrderStatus.Confirmed)
+            {
+                return BadRequest<string>("Order Already confirmed.");
+            }
             order.Status = request.NewStatus;
             if (!string.IsNullOrEmpty(order.Client.FCMToken))
             {
@@ -65,17 +69,9 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
                     fcmToken: order.Client.FCMToken,
                     title: request.NewStatus == OrderStatus.Confirmed ? "Order Confirmed" : "Order Cancelled",
                     body: request.NewStatus == OrderStatus.Confirmed ? "Your order has been confirmed by a driver." : "Your order has been cancelled.",
-                    cancellationToken: cancellationToken
+                    cancellationToken: cancellationToken,
+                    orderId: order.Id
                 );
-                var notification = new UserNotification
-                {
-                    UserId = order.ClientId,
-                    Title = request.NewStatus == OrderStatus.Confirmed ? "Order Confirmed" : "Order Cancelled",
-                    Body = request.NewStatus == OrderStatus.Confirmed ? "Your order has been confirmed by a driver." : "Your order has been cancelled.",
-                    Timestamp = DateTime.UtcNow,
-                    IsRead = false
-                };
-                await _unitOfWork.Notifications.AddAsync(notification);
             }
             await _unitOfWork.CompeleteAsync();
 

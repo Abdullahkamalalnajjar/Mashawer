@@ -24,12 +24,17 @@ namespace Mashawer.Api.Controllers
         }
 
         [HttpGet(Router.RepresentativeRouting.UpdateRepresentativeLivelocation)]
-        public async Task<IActionResult> UpdateRepresentativelocation([FromBody] UpdateRepresentativesLocationCommand command )
+        public async Task<IActionResult> UpdateRepresentativelocation([FromBody] UpdateRepresentativesLocationCommand command)
         {
-        
+
             var result = await Mediator.Send(command);
             return NewResult(result);
         }
-
+        [HttpPut(Router.RepresentativeRouting.UpdateRepresentativeInfo)]
+        public async Task<IActionResult> UpdateRepresentativeInfo([FromQuery] UpdateRepresentativeInfoCommand command)
+        {
+            var result = await Mediator.Send(command);
+            return NewResult(result);
+        }
     }
 }
