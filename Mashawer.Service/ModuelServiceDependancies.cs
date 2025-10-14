@@ -28,6 +28,8 @@ namespace Mashawer.Service
                 client.Timeout = TimeSpan.FromSeconds(60);
             });
             services.AddScoped<PaymobService>();
+            services.AddSignalR();
+            services.AddScoped<LocationHub>();
 
             return services;
         }

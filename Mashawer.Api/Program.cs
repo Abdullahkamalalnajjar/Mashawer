@@ -5,6 +5,7 @@ using Mashawer.Core;
 using Mashawer.Core.Middleware;
 using Mashawer.EF;
 using Mashawer.Service;
+using Mashawer.Service.Implementations;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -94,5 +95,7 @@ app.UseMiddleware<ErrorHandlerMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<LocationHub>("/liveLocationHub");
+
 app.Run();
 
