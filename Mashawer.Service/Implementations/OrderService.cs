@@ -131,7 +131,7 @@ namespace Mashawer.Service.Implementations
                     DeliveryLocation = x.Order.DeliveryLocation,
                     ItemDescription = x.Order.ItemDescription,
                     Price = x.Order.Price,
-                    VehicleType = x.Order.VehicleType,
+                    VehicleType = x.Order.VehicleType?? null,
                     EstimatedArrivalTime = x.Order.EstimatedArrivalTime,
                     Status = x.Order.Status.ToString(),
                     CreatedAt = x.Order.CreatedAt,
@@ -139,12 +139,12 @@ namespace Mashawer.Service.Implementations
                     ClientName = x.Order.Client.FullName,
                     DriverId = x.Order.DriverId,
                     DriverName = x.Order.Driver?.FullName,
-                    DriverPhoneNumber = x.Order.Driver?.PhoneNumber,
-                    DriverPhotoUrl = x.Order.Driver?.ProfilePictureUrl,
+                    DriverPhoneNumber = x.Order.Driver?.PhoneNumber ?? null,
+                    DriverPhotoUrl = x.Order.Driver?.ProfilePictureUrl?? null,
                     ItemPhotoAfter = x.Order.ItemPhotoAfter,
                     ItemPhotoBefore = x.Order.ItemPhotoBefore,
-                    VehicleNumber = x.Order.Driver.VehicleNumber,
-                    VehicleTypeOfDriver = x.Order.Driver.VehicleType,
+                    VehicleNumber = x.Order.Driver?.VehicleNumber ?? null,
+                    VehicleTypeOfDriver = x.Order.VehicleType ?? null,
                 })
                 .ToList();
 
