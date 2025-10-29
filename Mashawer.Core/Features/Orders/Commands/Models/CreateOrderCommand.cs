@@ -1,24 +1,42 @@
 ﻿using Mashawer.Data.Entities.ClasssOfOrder;
+using Mashawer.Data.Enums;
 
 namespace Mashawer.Core.Features.Orders.Commands.Models
 {
     public class CreateOrderCommand : IRequest<Response<string>>
     {
-        public double FromLatitude { get; set; }              // خط العرض من الموقع الحالي
-        public double FromLongitude { get; set; }             // خط الطول من الموقع الحالي
-        public double ToLatitude { get; set; }                // خط العرض إلى الموقع المطلوب
-        public double ToLongitude { get; set; }               // خط الطول إلى الموقع المطلوب
-        // موقع الاستلام
+        public OrderType Type { get; set; } = OrderType.Delivery; // توصيل أو مشتريات
+
+        // 📍 الإحداثيات
+        public double FromLatitude { get; set; }
+        public double FromLongitude { get; set; }
+        public double ToLatitude { get; set; }
+        public double ToLongitude { get; set; }
+
+        // 🏠 المواقع
         public Address PickupLocation { get; set; }
-        // موقع التسليم
         public Address DeliveryLocation { get; set; }
-        // تفاصيل العنصر المطلوب توصيله
+
+        // 📦 تفاصيل العنصر أو المشتريات
         public string ItemDescription { get; set; }
-        // تفاصيل الطلب
-        public decimal Price { get; set; }
-        public string VehicleType { get; set; } // مثل: موتوسيكل
-        public DateTime EstimatedArrivalTime { get; set; }
-        public string ClientId { get; set; } // معرف المستخدم الذي قام بإنشاء الطلب
-                                             //  public string? DriverId { get; set; } // معرف السائق الذي تم تعيينه للطلب (إن وجد)
+        public string? PurchaseDetails { get; set; }
+
+        // 🛍️ إعدادات المشتريات
+        public bool IsClientPaidForItems { get; set; } = true;
+        public decimal? ItemsTotalCost { get; set; }
+        public bool IsDriverReimbursed { get; set; } = false;
+
+        // 💰 الأسعار
+        public decimal DeliveryPrice { get; set; }
+
+        // 💳 الدفع
+        public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cash;  // كاش، فيزا، محفظة محلية، محفظة التطبيق
+        public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.NotPaid;
+        public string? PaymobTransactionId { get; set; }
+        public bool IsWalletUsed { get; set; } = false;
+
+        // 🚗 تفاصيل إضافية
+        public string VehicleType { get; set; }
+        public string ClientId { get; set; }
     }
 }

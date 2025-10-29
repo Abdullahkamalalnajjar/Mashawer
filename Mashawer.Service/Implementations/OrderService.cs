@@ -18,33 +18,62 @@ namespace Mashawer.Service.Implementations
         private static readonly Expression<Func<Order, OrderDto>> OrderToDto = o => new OrderDto
         {
             Id = o.Id,
+
+            // 🧾 نوع الطلب (توصيل / مشتريات)
+            Type = o.Type.ToString(),
+
+            // 📍 المواقع
             FromLatitude = o.FromLatitude,
             FromLongitude = o.FromLongitude,
             ToLatitude = o.ToLatitude,
             ToLongitude = o.ToLongitude,
-            ClientId = o.ClientId,
-            ClientName = o.Client.FullName,
-            CreatedAt = o.CreatedAt,
-            EstimatedArrivalTime = o.EstimatedArrivalTime,
             PickupLocation = o.PickupLocation,
-            Price = o.Price,
-            DriverId = o.DriverId,
-            DriverName = o.Driver.FullName,
-            DriverImageUrl = o.Driver != null ? o.Driver.ProfilePictureUrl : null,
+            DeliveryLocation = o.DeliveryLocation,
+
+            // 📦 تفاصيل العنصر
+            ItemDescription = o.ItemDescription,
+            PurchaseDetails = o.PurchaseDetails,
+
+            // 💰 الأسعار
+            DeliveryPrice = o.DeliveryPrice,
+            ItemsTotalCost = o.ItemsTotalCost,
+            TotalPrice = (o.ItemsTotalCost ?? 0) + o.DeliveryPrice,
+            IsClientPaidForItems = o.IsClientPaidForItems,
+            IsDriverReimbursed = o.IsDriverReimbursed,
+
+            // 💳 الدفع
+            PaymentMethod = o.PaymentMethod.ToString(),
+            PaymentStatus = o.PaymentStatus.ToString(),
+            PaymobTransactionId = o.PaymobTransactionId,
+            IsWalletUsed = o.IsWalletUsed,
+
+            // 🚗 المركبة
+            VehicleType = o.VehicleType,
             VehicleNumber = o.Driver != null ? o.Driver.VehicleNumber : null,
             VehicleTypeOfDriver = o.Driver != null ? o.Driver.VehicleType : null,
+
+            // 👤 المستخدمين
+            ClientId = o.ClientId,
+            ClientName = o.Client.FullName,
+            ClientPhoneNumber = o.Client.PhoneNumber,
+            DriverId = o.DriverId,
+            DriverName = o.Driver != null ? o.Driver.FullName : null,
             DriverPhoneNumber = o.Driver != null ? o.Driver.PhoneNumber : null,
             DriverPhotoUrl = o.Driver != null ? o.Driver.ProfilePictureUrl : null,
-            VehicleType = o.VehicleType,
-            CancelReason = o.CancelReason.ToString(),
-            Status = o.Status.ToString(),
-            OtherCancelReasonDetails = o.OtherCancelReasonDetails,
-            DeliveryLocation = o.DeliveryLocation,
-            ItemPhotoAfter = o.ItemPhotoAfter,
-            ItemPhotoBefore = o.ItemPhotoBefore,
-            ItemDescription = o.ItemDescription
 
+            // 📸 الصور
+            ItemPhotoBefore = o.ItemPhotoBefore,
+            ItemPhotoAfter = o.ItemPhotoAfter,
+
+            // ⚙️ الحالة والتفاصيل
+            Status = o.Status.ToString(),
+            CancelReason = o.CancelReason != null ? o.CancelReason.ToString() : null,
+            OtherCancelReasonDetails = o.OtherCancelReasonDetails,
+
+            // 🕒 التاريخ
+            CreatedAt = o.CreatedAt
         };
+
 
         #endregion 
         public async Task<IEnumerable<OrderDto>> GetOrdersAsync()
@@ -104,7 +133,7 @@ namespace Mashawer.Service.Implementations
 
         public async Task<IEnumerable<OrderDto>> GetNearbyPendingOrdersAsync(double lat, double lng, double radiusKm, int take)
         {
-            // هات pending + البيانات اللازمة للـ DTO
+            // جلب الطلبات المعلقة Pending مع البيانات اللازمة
             var pending = await _unitOfWork.Orders.GetTableNoTracking()
                 .Where(o => o.Status == OrderStatus.Pending)
                 .Include(o => o.Client)
@@ -123,28 +152,47 @@ namespace Mashawer.Service.Implementations
                 .Select(x => new OrderDto
                 {
                     Id = x.Order.Id,
+                    Type = x.Order.Type.ToString(),
+
                     FromLatitude = x.Order.FromLatitude,
                     FromLongitude = x.Order.FromLongitude,
                     ToLatitude = x.Order.ToLatitude,
                     ToLongitude = x.Order.ToLongitude,
+
                     PickupLocation = x.Order.PickupLocation,
                     DeliveryLocation = x.Order.DeliveryLocation,
+
                     ItemDescription = x.Order.ItemDescription,
-                    Price = x.Order.Price,
-                    VehicleType = x.Order.VehicleType?? null,
-                    EstimatedArrivalTime = x.Order.EstimatedArrivalTime,
+                    PurchaseDetails = x.Order.PurchaseDetails,
+                    IsClientPaidForItems = x.Order.IsClientPaidForItems,
+                    ItemsTotalCost = x.Order.ItemsTotalCost,
+                    DeliveryPrice = x.Order.DeliveryPrice,
+                    TotalPrice = x.Order.TotalPrice,
+
+                    PaymentMethod = x.Order.PaymentMethod.ToString(),
+                    PaymentStatus = x.Order.PaymentStatus.ToString(),
+                    PaymobTransactionId = x.Order.PaymobTransactionId,
+                    IsWalletUsed = x.Order.IsWalletUsed,
+
+                    VehicleType = x.Order.VehicleType,
                     Status = x.Order.Status.ToString(),
                     CreatedAt = x.Order.CreatedAt,
+
                     ClientId = x.Order.ClientId,
                     ClientName = x.Order.Client.FullName,
+                    ClientPhoneNumber = x.Order.Client.PhoneNumber,
+
                     DriverId = x.Order.DriverId,
                     DriverName = x.Order.Driver?.FullName,
-                    DriverPhoneNumber = x.Order.Driver?.PhoneNumber ?? null,
-                    DriverPhotoUrl = x.Order.Driver?.ProfilePictureUrl?? null,
-                    ItemPhotoAfter = x.Order.ItemPhotoAfter,
+                    DriverPhoneNumber = x.Order.Driver?.PhoneNumber,
+                    DriverPhotoUrl = x.Order.Driver?.ProfilePictureUrl,
+                    VehicleNumber = x.Order.Driver?.VehicleNumber,
+                    VehicleTypeOfDriver  = x.Order?.Driver.VehicleType,
+
                     ItemPhotoBefore = x.Order.ItemPhotoBefore,
-                    VehicleNumber = x.Order.Driver?.VehicleNumber ?? null,
-                    VehicleTypeOfDriver = x.Order.VehicleType ?? null,
+                    ItemPhotoAfter = x.Order.ItemPhotoAfter,
+
+                    DistanceKm = Math.Round(x.Distance, 2)
                 })
                 .ToList();
 

@@ -18,20 +18,50 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
 
         public async Task<Response<string>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
         {
-            var generalSetting = await _unitOfWork.GeneralSettings.GetTableNoTracking().FirstOrDefaultAsync();
-            var order = _mapper.Map<Order>(request);
-            if (generalSetting != null)
-            {
+            /*   //var generalSetting = await _unitOfWork.GeneralSettings.GetTableNoTracking().FirstOrDefaultAsync();
+               //var order = _mapper.Map<Order>(request);
+               //if (generalSetting != null)
+               //{
 
-                order.PriceAfterDeducation = (order.Price) - (order.Price * generalSetting.DiscountPercentage);
+               //    order.PriceAfterDeducation = (order.Price) - (order.Price * generalSetting.DiscountPercentage);
+               //}
+               //var result = await _orderService.CreateOrderAsync(order, cancellationToken);
+               //if (result == "Created")
+               //{
+               //    await _unitOfWork.CompeleteAsync();
+               //    return Created("Order has been created");
+               //}
+               //return UnprocessableEntity<string>("Exist error when make order");*/
+
+            var generalSetting = await _unitOfWork.GeneralSettings
+        .GetTableNoTracking()
+        .FirstOrDefaultAsync(cancellationToken);
+
+            // تحويل الـ Command إلى Entity
+            var order = _mapper.Map<Order>(request);
+
+            // تطبيق خصم التطبيق (لو موجود)
+            if (generalSetting != null && generalSetting.DiscountPercentage > 0)
+            {
+                order.DeliveryPrice -= order.DeliveryPrice * generalSetting.DiscountPercentage;
             }
+
+            // التعامل مع الدفع (مثلاً لو Paymob)
+            if (order.PaymentMethod == PaymentMethod.Visa || order.PaymentMethod == PaymentMethod.LocalWallet)
+            {
+                order.PaymentStatus = PaymentStatus.Pending; // لسه الدفع تحت المعالجة
+            }
+
+            // إنشاء الطلب
             var result = await _orderService.CreateOrderAsync(order, cancellationToken);
+
             if (result == "Created")
             {
                 await _unitOfWork.CompeleteAsync();
-                return Created("Order has been created");
+                return Created("Order has been created successfully");
             }
-            return UnprocessableEntity<string>("Exist error when make order");
+
+            return UnprocessableEntity<string>("An error occurred while creating the order");
         }
 
         public async Task<Response<string>> Handle(UpdateOrderStatusCommand request, CancellationToken cancellationToken)
@@ -62,7 +92,7 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
                 return BadRequest<string>("Order Already confirmed.");
             }
             order.Status = request.NewStatus;
-            if (!string.IsNullOrEmpty(order.Client.FCMToken))
+           /* if (!string.IsNullOrEmpty(order.Client.FCMToken))
             {
                 await _notificationService.SendNotificationAsync(
                     userId: order.ClientId,
@@ -72,7 +102,7 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
                     cancellationToken: cancellationToken,
                     orderId: order.Id
                 );
-            }
+            }*/
             await _unitOfWork.CompeleteAsync();
 
             return Success("Order status updated successfully");

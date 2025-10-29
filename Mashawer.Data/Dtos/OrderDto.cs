@@ -6,49 +6,60 @@ namespace Mashawer.Data.Dtos
     {
         public int Id { get; set; }
 
-        // إحداثيات الموقع على الخريطة
-        public double FromLatitude { get; set; }              // خط العرض من الموقع الحالي
-        public double FromLongitude { get; set; }             // خط الطول من الموقع الحالي
+        // 🧾 نوع الطلب (توصيل / مشتريات)
+        public string Type { get; set; }
 
-        public double ToLatitude { get; set; }                // خط العرض إلى الموقع المطلوب
-        public double ToLongitude { get; set; }               // خط الطول إلى الموقع المطلوب
+        // 📍 إحداثيات المواقع
+        public double FromLatitude { get; set; }
+        public double FromLongitude { get; set; }
+        public double ToLatitude { get; set; }
+        public double ToLongitude { get; set; }
 
-        // موقع الاستلام
         public Address PickupLocation { get; set; }
-
-        // موقع التسليم
         public Address DeliveryLocation { get; set; }
 
-        // تفاصيل العنصر المطلوب توصيله
+        // 📦 تفاصيل العنصر أو المشتريات
         public string ItemDescription { get; set; }
+        public string? PurchaseDetails { get; set; }
 
-        // رقم هاتف المرسل
+        // 💰 الأسعار
+        public decimal DeliveryPrice { get; set; }             // سعر التوصيل
+        public decimal? ItemsTotalCost { get; set; }           // إجمالي المشتريات (إن وجدت)
+        public decimal TotalPrice { get; set; }                // المجموع الكلي (توصيل + مشتريات)
+        public bool IsClientPaidForItems { get; set; }         // هل العميل دفع تمن المشتريات مسبقاً؟
+        public bool IsDriverReimbursed { get; set; }           // هل تم تعويض المندوب؟
 
+        // 💳 معلومات الدفع
+        public string PaymentMethod { get; set; }              // كاش / Paymob / Wallet
+        public string PaymentStatus { get; set; }              // مدفوع / غير مدفوع
+        public string? PaymobTransactionId { get; set; }       // رقم عملية الدفع (إن وجد)
+        public bool IsWalletUsed { get; set; }                 // هل تم الدفع من المحفظة؟
 
-        // تفاصيل الطلب
-        public decimal Price { get; set; }
-        public decimal? PriceAfterDeducation { get; set; } // السعر بعد خصم نسبة التطبيق (إن وجدت)
-        public string VehicleType { get; set; } // مثل: موتوسيكل
-        public DateTime EstimatedArrivalTime { get; set; }
+        // 🚗 المركبة
+        public string VehicleType { get; set; }                // نوع المركبة المطلوبة
+        public string VehicleTypeOfDriver { get; set; }                // نوع المركبة المطلوبة
+        public string? VehicleNumber { get; set; }             // رقم المركبة (لو متاح)
 
-        // حالة الطلب
-        public string Status { get; set; }
-
-        // سبب الإلغاء (إن وجد)
-        public string? CancelReason { get; set; }
-        public string? OtherCancelReasonDetails { get; set; }
-        // تاريخ ووقت إنشاء الطلب
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public string ClientId { get; set; } // معرف المستخدم الذي قام بإنشاء الطلب
-        public string ClientName { get; set; } // المستخدم الذي قام بإنشاء الطلب
-        public string? DriverId { get; set; } // معرف السائق الذي تم تعيينه للطلب (إن وجد)
-        public string? DriverPhoneNumber { get; set; }
-        public string? DriverPhotoUrl { get; set; }
-        public string? DriverName { get; set; } // السائق الذي تم تعيينه للطلب (إن وجد)
-        public string? DriverImageUrl { get; set; } // صورة السائق (إن وجد)
-        public string? VehicleNumber { get; set; } // رقم المركبة للسائق (إن وجد)
-        public string? VehicleTypeOfDriver { get; set; } // نوع المركبة للسائق (إن وجد)
+        // 📸 الصور
         public string? ItemPhotoBefore { get; set; }
         public string? ItemPhotoAfter { get; set; }
+
+        // ⚙️ الحالة والتواريخ
+        public string Status { get; set; }
+        public string? CancelReason { get; set; }
+        public string? OtherCancelReasonDetails { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        // 👤 المستخدمين
+        public string ClientId { get; set; }
+        public string ClientName { get; set; }
+        public string ClientPhoneNumber { get; set; }
+        public string? DriverId { get; set; }
+        public string? DriverName { get; set; }
+        public string? DriverPhoneNumber { get; set; }
+        public string? DriverPhotoUrl { get; set; }
+
+        // 📏 المسافة التقريبية (يتم حسابها في الخدمة)
+        public double? DistanceKm { get; set; }
     }
 }
