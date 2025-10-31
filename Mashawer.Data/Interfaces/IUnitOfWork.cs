@@ -12,6 +12,7 @@ namespace Mashawer.Data.Interfaces
         IWalletTransactionRepository WalletTransactions { get; }
         IWalletRepository Wallets { get; }
         IGeneralSettingRepository GeneralSettings { get; }
+        IPurchaseItemRepository PurchaseItems { get; }
         Task<int> CompeleteAsync();
         Task<IDbContextTransaction> BeginTransactionAsync();
 

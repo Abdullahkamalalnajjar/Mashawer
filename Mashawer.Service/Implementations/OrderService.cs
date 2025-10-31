@@ -30,14 +30,11 @@ namespace Mashawer.Service.Implementations
             PickupLocation = o.PickupLocation,
             DeliveryLocation = o.DeliveryLocation,
 
-            // 📦 تفاصيل العنصر
-            ItemDescription = o.ItemDescription,
-            PurchaseDetails = o.PurchaseDetails,
+       
 
             // 💰 الأسعار
             DeliveryPrice = o.DeliveryPrice,
-            ItemsTotalCost = o.ItemsTotalCost,
-            TotalPrice = (o.ItemsTotalCost ?? 0) + o.DeliveryPrice,
+        
             IsClientPaidForItems = o.IsClientPaidForItems,
             IsDriverReimbursed = o.IsDriverReimbursed,
 
@@ -162,12 +159,8 @@ namespace Mashawer.Service.Implementations
                     PickupLocation = x.Order.PickupLocation,
                     DeliveryLocation = x.Order.DeliveryLocation,
 
-                    ItemDescription = x.Order.ItemDescription,
-                    PurchaseDetails = x.Order.PurchaseDetails,
                     IsClientPaidForItems = x.Order.IsClientPaidForItems,
-                    ItemsTotalCost = x.Order.ItemsTotalCost,
                     DeliveryPrice = x.Order.DeliveryPrice,
-                    TotalPrice = x.Order.TotalPrice,
 
                     PaymentMethod = x.Order.PaymentMethod.ToString(),
                     PaymentStatus = x.Order.PaymentStatus.ToString(),

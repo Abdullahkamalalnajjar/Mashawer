@@ -4,6 +4,7 @@ using Mashawer.EF;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Mashawer.EF.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251030235425_addpurchaseItem")]
+    partial class addpurchaseItem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -252,6 +255,9 @@ namespace Mashawer.EF.Migrations
                     b.Property<string>("ItemPhotoBefore")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<decimal?>("ItemsTotalCost")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("OtherCancelReasonDetails")
                         .HasColumnType("nvarchar(max)");
 
@@ -273,9 +279,6 @@ namespace Mashawer.EF.Migrations
 
                     b.Property<double>("ToLongitude")
                         .HasColumnType("float");
-
-                    b.Property<decimal?>("TotalPrice")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("Type")
                         .HasColumnType("int");

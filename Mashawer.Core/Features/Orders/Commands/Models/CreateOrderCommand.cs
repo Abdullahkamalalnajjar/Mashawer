@@ -16,11 +16,6 @@ namespace Mashawer.Core.Features.Orders.Commands.Models
         // 🏠 المواقع
         public Address PickupLocation { get; set; }
         public Address DeliveryLocation { get; set; }
-
-        // 📦 تفاصيل العنصر أو المشتريات
-        public string ItemDescription { get; set; }
-        public string? PurchaseDetails { get; set; }
-
         // 🛍️ إعدادات المشتريات
         public bool IsClientPaidForItems { get; set; } = true;
         public decimal? ItemsTotalCost { get; set; }
@@ -38,5 +33,15 @@ namespace Mashawer.Core.Features.Orders.Commands.Models
         // 🚗 تفاصيل إضافية
         public string VehicleType { get; set; }
         public string ClientId { get; set; }
+       
+        public List<PrushaseItemDto>? PurchaseItems { get; set; }
+
+
+    }
+    public class PrushaseItemDto
+    {
+        public string Name { get; set; }
+        public int Quantity { get; set; }
+        public decimal Price { get; set; }
     }
 }

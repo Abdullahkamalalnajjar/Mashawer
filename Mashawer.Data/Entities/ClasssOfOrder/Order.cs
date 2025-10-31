@@ -67,18 +67,13 @@ namespace Mashawer.Data.Entities.ClasssOfOrder
         public Address PickupLocation { get; set; }     // عنوان موقع الاستلام
         public Address DeliveryLocation { get; set; }   // عنوان موقع التسليم
 
-        // 📦 تفاصيل العنصر أو المشتريات
-        public string ItemDescription { get; set; }         // وصف العنصر المراد توصيله
-        public string? PurchaseDetails { get; set; }         // تفاصيل المشتريات (لو نوع الطلب مشتريات)
 
         // 🛍️ إعدادات خاصة بالمشتريات
         public bool IsClientPaidForItems { get; set; } = true;   // لو العميل دفع تمن المشتريات مسبقًا = true، لو المندوب هيدفع مؤقتًا = false
-        public decimal? ItemsTotalCost { get; set; }             // إجمالي تمن المشتريات (لو موجود)
         public bool IsDriverReimbursed { get; set; } = false;    // هل المندوب تم تعويضه من العميل أو النظام بعد الدفع؟
 
         // 💰 الأسعار
         public decimal DeliveryPrice { get; set; }               // سعر التوصيل فقط
-        public decimal TotalPrice => (ItemsTotalCost ?? 0) + DeliveryPrice; // السعر الكلي = المشتريات + التوصيل
 
         // 💳 معلومات الدفع
         public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cash;  // طريقة الدفع (كاش، Paymob، محفظة التطبيق)
@@ -96,14 +91,24 @@ namespace Mashawer.Data.Entities.ClasssOfOrder
         // 📸 صور العنصر
         public string? ItemPhotoBefore { get; set; }            // صورة العنصر قبل التوصيل أو الشراء
         public string? ItemPhotoAfter { get; set; }             // صورة العنصر بعد التسليم أو التوصيل
-
+        public decimal? TotalPrice { get; set; }               // السعر الإجمالي للطلب (المشتريات + التوصيل)
         // 👤 معلومات المستخدمين
         public string ClientId { get; set; }                    // رقم تعريف العميل اللي أنشأ الطلب
-        public ApplicationUser Client { get; set; }             // الكيان الكامل للعميل
+        public ApplicationUser Client { get; set; }
+        // الكيان الكامل للعميل
         public string? DriverId { get; set; }                   // رقم تعريف المندوب اللي تم تعيينه
         public ApplicationUser? Driver { get; set; }            // الكيان الكامل للمندوب (لو تم التعيين)
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow; // تاريخ ووقت إنشاء الطلب
+        public ICollection<PurchaseItem>? PurchaseItems { get; set; } = new List<PurchaseItem>();
+
+
+
+        public void CalcTotalPrice()
+        {
+            TotalPrice = (PurchaseItems?.Sum(s => s.PriceTotal) ?? 0) + DeliveryPrice;
+        }
+
+
     }
 }
-

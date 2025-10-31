@@ -18,24 +18,10 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
 
         public async Task<Response<string>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
         {
-            /*   //var generalSetting = await _unitOfWork.GeneralSettings.GetTableNoTracking().FirstOrDefaultAsync();
-               //var order = _mapper.Map<Order>(request);
-               //if (generalSetting != null)
-               //{
-
-               //    order.PriceAfterDeducation = (order.Price) - (order.Price * generalSetting.DiscountPercentage);
-               //}
-               //var result = await _orderService.CreateOrderAsync(order, cancellationToken);
-               //if (result == "Created")
-               //{
-               //    await _unitOfWork.CompeleteAsync();
-               //    return Created("Order has been created");
-               //}
-               //return UnprocessableEntity<string>("Exist error when make order");*/
 
             var generalSetting = await _unitOfWork.GeneralSettings
-        .GetTableNoTracking()
-        .FirstOrDefaultAsync(cancellationToken);
+         .GetTableNoTracking()
+         .FirstOrDefaultAsync(cancellationToken);
 
             // تحويل الـ Command إلى Entity
             var order = _mapper.Map<Order>(request);
@@ -51,6 +37,7 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
             {
                 order.PaymentStatus = PaymentStatus.Pending; // لسه الدفع تحت المعالجة
             }
+            order.CalcTotalPrice();
 
             // إنشاء الطلب
             var result = await _orderService.CreateOrderAsync(order, cancellationToken);
@@ -92,17 +79,17 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
                 return BadRequest<string>("Order Already confirmed.");
             }
             order.Status = request.NewStatus;
-           /* if (!string.IsNullOrEmpty(order.Client.FCMToken))
-            {
-                await _notificationService.SendNotificationAsync(
-                    userId: order.ClientId,
-                    fcmToken: order.Client.FCMToken,
-                    title: request.NewStatus == OrderStatus.Confirmed ? "Order Confirmed" : "Order Cancelled",
-                    body: request.NewStatus == OrderStatus.Confirmed ? "Your order has been confirmed by a driver." : "Your order has been cancelled.",
-                    cancellationToken: cancellationToken,
-                    orderId: order.Id
-                );
-            }*/
+            /* if (!string.IsNullOrEmpty(order.Client.FCMToken))
+             {
+                 await _notificationService.SendNotificationAsync(
+                     userId: order.ClientId,
+                     fcmToken: order.Client.FCMToken,
+                     title: request.NewStatus == OrderStatus.Confirmed ? "Order Confirmed" : "Order Cancelled",
+                     body: request.NewStatus == OrderStatus.Confirmed ? "Your order has been confirmed by a driver." : "Your order has been cancelled.",
+                     cancellationToken: cancellationToken,
+                     orderId: order.Id
+                 );
+             }*/
             await _unitOfWork.CompeleteAsync();
 
             return Success("Order status updated successfully");

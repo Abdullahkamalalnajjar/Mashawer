@@ -14,6 +14,7 @@ namespace Mashawer.EF
             services.AddTransient<IWalletTransactionRepository, WalletTransactionRepository>();
             services.AddTransient<IGeneralSettingRepository, GeneralSettingRepository>();
             services.AddTransient<IUserNotificationRepository, UserNotificationRepository>();
+            services.AddTransient<IPurchaseItemRepository, PurchaseItemRepository>();
 
             return services;
         }

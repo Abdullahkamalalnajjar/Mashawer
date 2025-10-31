@@ -18,9 +18,8 @@ namespace Mashawer.EF.Configurations
             builder.Property(p => p.DeliveryPrice)
                      .HasColumnType("decimal(18,2)");
 
-            builder.Property(p => p.ItemsTotalCost)
-                   .HasColumnType("decimal(18,2)");
-
+            builder.Property(p => p.TotalPrice)
+                     .HasColumnType("decimal(18,2)");
             // إعدادات إضافية
             builder.Property(o => o.CreatedAt)
                    .HasDefaultValueSql("GETUTCDATE()");

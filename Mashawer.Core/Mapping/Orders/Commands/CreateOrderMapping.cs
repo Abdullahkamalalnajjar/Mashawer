@@ -8,6 +8,7 @@ namespace Mashawer.Core.Mapping.Orders
         public void CreateOrder_Mapping()
         {
             CreateMap<CreateOrderCommand, Order>();
+            CreateMap<PrushaseItemDto, PurchaseItem>();
         }
     }
 }
