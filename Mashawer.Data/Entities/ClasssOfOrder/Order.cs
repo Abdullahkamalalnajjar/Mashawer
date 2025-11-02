@@ -74,6 +74,10 @@ namespace Mashawer.Data.Entities.ClasssOfOrder
 
         // 💰 الأسعار
         public decimal DeliveryPrice { get; set; }               // سعر التوصيل فقط
+        public double DistanceKm { get; set; }
+
+        // 📝 وصف الشيء المطلوب توصيله (في حالة التوصيل فقط)
+       public string? DeliveryDescription { get; set; }
 
         // 💳 معلومات الدفع
         public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cash;  // طريقة الدفع (كاش، Paymob، محفظة التطبيق)
@@ -106,7 +110,21 @@ namespace Mashawer.Data.Entities.ClasssOfOrder
 
         public void CalcTotalPrice()
         {
-            TotalPrice = (PurchaseItems?.Sum(s => s.PriceTotal) ?? 0) + DeliveryPrice;
+            decimal total = 0;
+
+            // لو نوع الطلب مشتريات
+            if (Type == OrderType.Purchase && PurchaseItems != null && PurchaseItems.Any())
+            {
+                total = PurchaseItems.Sum(p => p.PriceTotal); 
+                total += DeliveryPrice;
+            }
+            else
+            {
+                // لو توصيل عادي (من غير مشتريات
+                total = DeliveryPrice;
+            }
+
+            TotalPrice = total;
         }
 
 

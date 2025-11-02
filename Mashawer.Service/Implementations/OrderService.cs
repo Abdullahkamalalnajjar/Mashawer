@@ -15,6 +15,7 @@ namespace Mashawer.Service.Implementations
         }
 
         #region  Expression to convert Order to OrderDto
+        #region Expression to convert Order to OrderDto
         private static readonly Expression<Func<Order, OrderDto>> OrderToDto = o => new OrderDto
         {
             Id = o.Id,
@@ -30,11 +31,9 @@ namespace Mashawer.Service.Implementations
             PickupLocation = o.PickupLocation,
             DeliveryLocation = o.DeliveryLocation,
 
-       
-
             // 💰 الأسعار
             DeliveryPrice = o.DeliveryPrice,
-        
+            TotalPrice = o.TotalPrice ?? 0,  // لتفادي NullReference
             IsClientPaidForItems = o.IsClientPaidForItems,
             IsDriverReimbursed = o.IsDriverReimbursed,
 
@@ -64,15 +63,28 @@ namespace Mashawer.Service.Implementations
 
             // ⚙️ الحالة والتفاصيل
             Status = o.Status.ToString(),
-            CancelReason = o.CancelReason != null ? o.CancelReason.ToString() : null,
+            CancelReason = o.CancelReason,
             OtherCancelReasonDetails = o.OtherCancelReasonDetails,
+            DistanceKm=o.DistanceKm,
+            
 
             // 🕒 التاريخ
-            CreatedAt = o.CreatedAt
+            CreatedAt = o.CreatedAt,
+
+            // 🧾 عناصر المشتريات (لو نوع الطلب مشتريات)
+            PurchaseItems = o.PurchaseItems.Select(p => new PurchaseItemDto
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Quantity = p.Quantity,
+                PricePerUnit = p.Price,
+                PriceTotal = p.PriceTotal
+            }).ToList()
         };
+        #endregion
 
 
-        #endregion 
+        #endregion
         public async Task<IEnumerable<OrderDto>> GetOrdersAsync()
         {
             return await _unitOfWork.Orders.GetTableNoTracking()
@@ -130,14 +142,22 @@ namespace Mashawer.Service.Implementations
 
         public async Task<IEnumerable<OrderDto>> GetNearbyPendingOrdersAsync(double lat, double lng, double radiusKm, int take)
         {
-            // جلب الطلبات المعلقة Pending مع البيانات اللازمة
-            var pending = await _unitOfWork.Orders.GetTableNoTracking()
-                .Where(o => o.Status == OrderStatus.Pending)
-                .Include(o => o.Client)
-                .Include(o => o.Driver)
+            double delta = radiusKm / 111; // درجة تقريبية لكل كم
+            var minLat = lat - delta;
+            var maxLat = lat + delta;
+            var minLng = lng - delta;
+            var maxLng = lng + delta;
+
+            // ✅ جلب الطلبات القريبة باستخدام Projection مباشر
+            var orders = await _unitOfWork.Orders.GetTableNoTracking()
+                .Where(o => o.Status == OrderStatus.Pending &&
+                            o.FromLatitude >= minLat && o.FromLatitude <= maxLat &&
+                            o.FromLongitude >= minLng && o.FromLongitude <= maxLng)
+                .Select(OrderToDto) // هنا بنستخدم الـ Expression الجاهز
                 .ToListAsync();
 
-            var nearby = pending
+            // ✅ حساب المسافة بعدين (لأنها مش محسوبة داخل الـ Expression)
+            var nearby = orders
                 .Select(o => new
                 {
                     Order = o,
@@ -146,46 +166,10 @@ namespace Mashawer.Service.Implementations
                 .Where(x => x.Distance <= radiusKm)
                 .OrderBy(x => x.Distance)
                 .Take(take)
-                .Select(x => new OrderDto
+                .Select(x =>
                 {
-                    Id = x.Order.Id,
-                    Type = x.Order.Type.ToString(),
-
-                    FromLatitude = x.Order.FromLatitude,
-                    FromLongitude = x.Order.FromLongitude,
-                    ToLatitude = x.Order.ToLatitude,
-                    ToLongitude = x.Order.ToLongitude,
-
-                    PickupLocation = x.Order.PickupLocation,
-                    DeliveryLocation = x.Order.DeliveryLocation,
-
-                    IsClientPaidForItems = x.Order.IsClientPaidForItems,
-                    DeliveryPrice = x.Order.DeliveryPrice,
-
-                    PaymentMethod = x.Order.PaymentMethod.ToString(),
-                    PaymentStatus = x.Order.PaymentStatus.ToString(),
-                    PaymobTransactionId = x.Order.PaymobTransactionId,
-                    IsWalletUsed = x.Order.IsWalletUsed,
-
-                    VehicleType = x.Order.VehicleType,
-                    Status = x.Order.Status.ToString(),
-                    CreatedAt = x.Order.CreatedAt,
-
-                    ClientId = x.Order.ClientId,
-                    ClientName = x.Order.Client.FullName,
-                    ClientPhoneNumber = x.Order.Client.PhoneNumber,
-
-                    DriverId = x.Order.DriverId,
-                    DriverName = x.Order.Driver?.FullName,
-                    DriverPhoneNumber = x.Order.Driver?.PhoneNumber,
-                    DriverPhotoUrl = x.Order.Driver?.ProfilePictureUrl,
-                    VehicleNumber = x.Order.Driver?.VehicleNumber,
-                    VehicleTypeOfDriver  = x.Order?.Driver.VehicleType,
-
-                    ItemPhotoBefore = x.Order.ItemPhotoBefore,
-                    ItemPhotoAfter = x.Order.ItemPhotoAfter,
-
-                    DistanceKm = Math.Round(x.Distance, 2)
+                    x.Order.DistanceKm = Math.Round(x.Distance, 2);
+                    return x.Order;
                 })
                 .ToList();
 

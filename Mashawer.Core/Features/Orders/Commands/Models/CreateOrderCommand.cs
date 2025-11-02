@@ -21,8 +21,8 @@ namespace Mashawer.Core.Features.Orders.Commands.Models
         public decimal? ItemsTotalCost { get; set; }
         public bool IsDriverReimbursed { get; set; } = false;
 
-        // 💰 الأسعار
-        public decimal DeliveryPrice { get; set; }
+        // 📝 وصف الشيء المطلوب توصيله (في حالة التوصيل فقط)
+        public string? DeliveryDescription { get; set; }
 
         // 💳 الدفع
         public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cash;  // كاش، فيزا، محفظة محلية، محفظة التطبيق

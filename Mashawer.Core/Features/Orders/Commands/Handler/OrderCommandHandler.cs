@@ -15,16 +15,24 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> userManager = _userManager;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
-
+      
         public async Task<Response<string>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
         {
-
             var generalSetting = await _unitOfWork.GeneralSettings
-         .GetTableNoTracking()
-         .FirstOrDefaultAsync(cancellationToken);
+                .GetTableNoTracking()
+                .FirstOrDefaultAsync(cancellationToken);
 
             // تحويل الـ Command إلى Entity
             var order = _mapper.Map<Order>(request);
+
+            // ✅ حساب المسافة وسعر التوصيل
+            order.DistanceKm = Math.Round(GeoHelper.CalculateDistance(
+                order.FromLatitude, order.FromLongitude,
+                order.ToLatitude, order.ToLongitude), 2);
+
+            order.DeliveryPrice = GeoHelper.CalculateDeliveryPrice(
+                order.FromLatitude, order.FromLongitude,
+                order.ToLatitude, order.ToLongitude);
 
             // تطبيق خصم التطبيق (لو موجود)
             if (generalSetting != null && generalSetting.DiscountPercentage > 0)
@@ -32,11 +40,11 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
                 order.DeliveryPrice -= order.DeliveryPrice * generalSetting.DiscountPercentage;
             }
 
-            // التعامل مع الدفع (مثلاً لو Paymob)
+            // التعامل مع الدفع
             if (order.PaymentMethod == PaymentMethod.Visa || order.PaymentMethod == PaymentMethod.LocalWallet)
-            {
-                order.PaymentStatus = PaymentStatus.Pending; // لسه الدفع تحت المعالجة
-            }
+                order.PaymentStatus = PaymentStatus.Pending;
+
+            // حساب الإجمالي (المشتريات + التوصيل)
             order.CalcTotalPrice();
 
             // إنشاء الطلب
@@ -45,56 +53,77 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
             if (result == "Created")
             {
                 await _unitOfWork.CompeleteAsync();
-                return Created("Order has been created successfully");
+                return Created("Order has been created successfully", new { orderId = order.Id });
             }
 
             return UnprocessableEntity<string>("An error occurred while creating the order");
         }
 
+
         public async Task<Response<string>> Handle(UpdateOrderStatusCommand request, CancellationToken cancellationToken)
         {
-
-            var order = await _unitOfWork.Orders.GetTableAsTracking().Where(x => x.Id == request.OrderId).Include(c => c.Client).FirstOrDefaultAsync();
+            // ✅ جلب الطلب مع العميل والسائق (لو موجود)
+            var order = await _unitOfWork.Orders
+                .GetTableAsTracking()
+                .Include(o => o.Client)
+                .Include(o => o.Driver)
+                .FirstOrDefaultAsync(o => o.Id == request.OrderId, cancellationToken);
 
             if (order == null)
-                return NotFound<string>("Order not found");
+                return NotFound<string>("Order not found.");
 
-            // ✅ لو السواق وافق، لازم نضيف DriverId
+            // ✅ لو الطلب بالفعل في نفس الحالة المطلوبة
+            if (order.Status == request.NewStatus)
+                return BadRequest<string>($"Order is already {order.Status}.");
+
+            // ✅ لو السواق هو اللي بيأكد الطلب
             if (request.NewStatus == OrderStatus.Confirmed)
             {
-                if (string.IsNullOrEmpty(request.DriverId))
+                if (string.IsNullOrWhiteSpace(request.DriverId))
                     return BadRequest<string>("DriverId is required for confirmation.");
 
                 var driver = await userManager.FindByIdAsync(request.DriverId);
-
                 if (driver == null)
                     return BadRequest<string>("Driver not found.");
 
+                // ربط الطلب بالسائق الجديد
                 order.DriverId = driver.Id;
+            }
 
-            }
-            // if order already confirmed
-            if (order.Status == OrderStatus.Confirmed && request.NewStatus == OrderStatus.Confirmed)
-            {
-                return BadRequest<string>("Order Already confirmed.");
-            }
+            // ✅ تحديث الحالة
             order.Status = request.NewStatus;
-            /* if (!string.IsNullOrEmpty(order.Client.FCMToken))
-             {
-                 await _notificationService.SendNotificationAsync(
-                     userId: order.ClientId,
-                     fcmToken: order.Client.FCMToken,
-                     title: request.NewStatus == OrderStatus.Confirmed ? "Order Confirmed" : "Order Cancelled",
-                     body: request.NewStatus == OrderStatus.Confirmed ? "Your order has been confirmed by a driver." : "Your order has been cancelled.",
-                     cancellationToken: cancellationToken,
-                     orderId: order.Id
-                 );
-             }*/
+
+            // ✅ إرسال إشعار (لو فعّلت الخدمة)
+            /*
+            if (!string.IsNullOrEmpty(order.Client?.FCMToken))
+            {
+                var title = request.NewStatus == OrderStatus.Confirmed
+                    ? "Order Confirmed"
+                    : request.NewStatus == OrderStatus.Cancelled
+                        ? "Order Cancelled"
+                        : "Order Updated";
+
+                var body = request.NewStatus == OrderStatus.Confirmed
+                    ? "Your order has been confirmed by a driver."
+                    : request.NewStatus == OrderStatus.Cancelled
+                        ? "Your order has been cancelled."
+                        : $"Order status changed to {request.NewStatus}.";
+
+                await _notificationService.SendNotificationAsync(
+                    userId: order.ClientId,
+                    fcmToken: order.Client.FCMToken,
+                    title: title,
+                    body: body,
+                    cancellationToken: cancellationToken,
+                    orderId: order.Id
+                );
+            }
+            */
+
+            // ✅ حفظ التغييرات
             await _unitOfWork.CompeleteAsync();
 
-            return Success("Order status updated successfully");
-
-
+            return Success($"Order status updated to {request.NewStatus} successfully.");
         }
 
 

@@ -1,4 +1,5 @@
 ﻿using Mashawer.Data.Entities.ClasssOfOrder;
+using Mashawer.Data.Enums;
 
 namespace Mashawer.Data.Dtos
 {
@@ -18,16 +19,13 @@ namespace Mashawer.Data.Dtos
         public Address PickupLocation { get; set; }
         public Address DeliveryLocation { get; set; }
 
-        // 📦 تفاصيل العنصر أو المشتريات
-        public string ItemDescription { get; set; }
-        public string? PurchaseDetails { get; set; }
-
-        // 💰 الأسعار
+      
+       // 💰 الأسعار
         public decimal DeliveryPrice { get; set; }             // سعر التوصيل
-        public decimal? ItemsTotalCost { get; set; }           // إجمالي المشتريات (إن وجدت)
         public decimal TotalPrice { get; set; }                // المجموع الكلي (توصيل + مشتريات)
         public bool IsClientPaidForItems { get; set; }         // هل العميل دفع تمن المشتريات مسبقاً؟
         public bool IsDriverReimbursed { get; set; }           // هل تم تعويض المندوب؟
+  
 
         // 💳 معلومات الدفع
         public string PaymentMethod { get; set; }              // كاش / Paymob / Wallet
@@ -61,5 +59,7 @@ namespace Mashawer.Data.Dtos
 
         // 📏 المسافة التقريبية (يتم حسابها في الخدمة)
         public double? DistanceKm { get; set; }
+        public List<PurchaseItemDto> PurchaseItems { get; set; }
+
     }
 }
