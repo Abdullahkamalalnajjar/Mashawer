@@ -2,12 +2,15 @@
 using Mashawer.Core.Features.Representatives.Command.Models;
 using Mashawer.Core.Features.Representatives.Queries.Models;
 using Mashawer.Data.AppMetaData;
+using Mashawer.Service.Abstracts;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Mashawer.Api.Controllers
 {
-    public class RepresentativeController : AppBaseController
+    public class RepresentativeController(IRepresentativeService representativeService) : AppBaseController
     {
+        private readonly IRepresentativeService _representativeService = representativeService;
+
         [HttpGet(Router.RepresentativeRouting.GetApprovedRepresentativesByAddress)]
         public async Task<IActionResult> GetRepresentativesByAddress(string address)
         {
@@ -33,6 +36,19 @@ namespace Mashawer.Api.Controllers
         [HttpPut(Router.RepresentativeRouting.UpdateRepresentativeInfo)]
         public async Task<IActionResult> UpdateRepresentativeInfo([FromQuery] UpdateRepresentativeInfoCommand command)
         {
+            var result = await Mediator.Send(command);
+            return NewResult(result);
+        }
+        [HttpPost(Router.RepresentativeRouting.DriverArrived)]
+        public async Task<IActionResult> DriverArrived([FromRoute] int orderId)
+        {
+            var result = await _representativeService.MarkDriverArrivedAsync(orderId);
+            return Ok(result);
+        }
+        [HttpPut(Router.RepresentativeRouting.MarkDriverArrived)]
+        public async Task<IActionResult> MarkClientLate([FromRoute] int orderId)
+        {
+            var command = new MarkIsClientLateCommand(orderId);
             var result = await Mediator.Send(command);
             return NewResult(result);
         }

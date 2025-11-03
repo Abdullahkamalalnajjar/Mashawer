@@ -15,7 +15,7 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> userManager = _userManager;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
-      
+
         public async Task<Response<string>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
         {
             var generalSetting = await _unitOfWork.GeneralSettings
@@ -37,7 +37,7 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
             // تطبيق خصم التطبيق (لو موجود)
             if (generalSetting != null && generalSetting.DiscountPercentage > 0)
             {
-                order.DeliveryPrice -= order.DeliveryPrice * generalSetting.DiscountPercentage;
+                order.DeducationDelivery = order.DeliveryPrice * generalSetting.DiscountPercentage;
             }
 
             // التعامل مع الدفع
@@ -94,7 +94,7 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
             order.Status = request.NewStatus;
 
             // ✅ إرسال إشعار (لو فعّلت الخدمة)
-            /*
+            
             if (!string.IsNullOrEmpty(order.Client?.FCMToken))
             {
                 var title = request.NewStatus == OrderStatus.Confirmed
@@ -118,7 +118,7 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
                     orderId: order.Id
                 );
             }
-            */
+            
 
             // ✅ حفظ التغييرات
             await _unitOfWork.CompeleteAsync();

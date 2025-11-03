@@ -1,9 +1,10 @@
 ﻿namespace Mashawer.Service.Implementations
 {
-    public class RepresentativeService(IUnitOfWork unitOfWork, IHttpContextAccessor httpContextAccessor) : IRepresentativeService
+    public class RepresentativeService(IUnitOfWork unitOfWork, IHttpContextAccessor httpContextAccessor, INotificationService notificationService) : IRepresentativeService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+        private readonly INotificationService _notificationService = notificationService;
 
         public async Task<IEnumerable<RepresentativeDTO>> GetAllRepresentativesByAddressAsync(string address)
         {
@@ -37,13 +38,7 @@
                     RepresentativeLatitude = x.RepresentativeLatitude,
                     RepresentativeLongitude = x.RepresentativeLongitude
                 }).ToListAsync();
-            //var order = await _unitOfWork.Orders.GetTableNoTracking()
-            //    .Where(x => x.Id == orderId)
-            //    .Select(x => new
-            //    {
-            //        x.ToLatitude,
-            //        x.ToLongitude
-            //    }).FirstOrDefaultAsync();
+          
             var deliveryPrice = CalculateDeliveryPrice(fromLatitude, fromLongitude, toLatitude, toLongitude);
             var nearest = representatives
                 .Select(rep =>
@@ -104,6 +99,39 @@
             user.VehicleType = type;
             user.VehiclePictureUrl = FileHelper.SaveFile(vehicalPicture, "VehicalPicture", _httpContextAccessor);
             _unitOfWork.Users.Update(user);
+            await _unitOfWork.CompeleteAsync();
+            return "Updated";
+        }
+        public async Task<string> MarkDriverArrivedAsync(int orderId)
+        {
+            var order = await _unitOfWork.Orders.GetTableAsTracking()
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
+            if (order == null)
+                return "NotFound";
+
+            // إرسال إشعار للعميل
+            var client = await _unitOfWork.Users.GetTableNoTracking().Where(x => x.Id == order.ClientId).FirstOrDefaultAsync();
+            if (!string.IsNullOrEmpty(client?.FCMToken))
+            {
+                await _notificationService.SendNotificationAsync(
+                    order.ClientId,
+                    client.FCMToken,
+                    "المندوب قد وصل",
+                    "المندوب وصل إلى موقعك الآن، الرجاء الاستعداد للاستلام.",
+                    cancellationToken: CancellationToken.None
+                );
+            }
+
+            return "DriverArrived";
+        }
+        public async Task<string> MarkIsClientLate(int orderId)
+        {
+            var order = await _unitOfWork.Orders.GetByIdAsync(orderId);
+            if (order == null)
+                return "NotFound";
+            order.IsClientLate = true;
+            _unitOfWork.Orders.Update(order);
             await _unitOfWork.CompeleteAsync();
             return "Updated";
         }

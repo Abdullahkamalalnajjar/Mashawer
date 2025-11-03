@@ -64,8 +64,8 @@ namespace Mashawer.Data.Entities.ClasssOfOrder
         public double ToLatitude { get; set; }      // خط العرض لموقع التسليم
         public double ToLongitude { get; set; }     // خط الطول لموقع التسليم
 
-        public Address PickupLocation { get; set; }     // عنوان موقع الاستلام
-        public Address DeliveryLocation { get; set; }   // عنوان موقع التسليم
+        public Address? PickupLocation { get; set; }
+        public Address? DeliveryLocation { get; set; }
 
 
         // 🛍️ إعدادات خاصة بالمشتريات
@@ -77,7 +77,7 @@ namespace Mashawer.Data.Entities.ClasssOfOrder
         public double DistanceKm { get; set; }
 
         // 📝 وصف الشيء المطلوب توصيله (في حالة التوصيل فقط)
-       public string? DeliveryDescription { get; set; }
+        public string? DeliveryDescription { get; set; }
 
         // 💳 معلومات الدفع
         public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cash;  // طريقة الدفع (كاش، Paymob، محفظة التطبيق)
@@ -90,11 +90,12 @@ namespace Mashawer.Data.Entities.ClasssOfOrder
         public OrderStatus Status { get; set; } = OrderStatus.Pending; // حالة الطلب الحالية (قيد الانتظار، قيد التنفيذ...)
         public string? CancelReason { get; set; }
         public string? OtherCancelReasonDetails { get; set; }
-
+        public bool IsClientLate { get; set; } = false;          // هل العميل تأخر في الاستعداد للاستلام؟
 
         // 📸 صور العنصر
         public string? ItemPhotoBefore { get; set; }            // صورة العنصر قبل التوصيل أو الشراء
         public string? ItemPhotoAfter { get; set; }             // صورة العنصر بعد التسليم أو التوصيل
+        public decimal? DeducationDelivery { get; set; }  // نسبة خصم التطبيق على سعر التوصيل (إن وجدت)
         public decimal? TotalPrice { get; set; }               // السعر الإجمالي للطلب (المشتريات + التوصيل)
         // 👤 معلومات المستخدمين
         public string ClientId { get; set; }                    // رقم تعريف العميل اللي أنشأ الطلب
@@ -115,7 +116,7 @@ namespace Mashawer.Data.Entities.ClasssOfOrder
             // لو نوع الطلب مشتريات
             if (Type == OrderType.Purchase && PurchaseItems != null && PurchaseItems.Any())
             {
-                total = PurchaseItems.Sum(p => p.PriceTotal); 
+                total = PurchaseItems.Sum(p => p.PriceTotal);
                 total += DeliveryPrice;
             }
             else

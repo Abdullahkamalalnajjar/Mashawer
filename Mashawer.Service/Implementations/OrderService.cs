@@ -33,10 +33,11 @@ namespace Mashawer.Service.Implementations
 
             // 💰 الأسعار
             DeliveryPrice = o.DeliveryPrice,
-            TotalPrice = o.TotalPrice ?? 0,  // لتفادي NullReference
+            TotalPrice = o.TotalPrice ?? 0,  // لتفادي NullRefer,ence
+            DeducationDelivery = o.DeducationDelivery ?? 0,
             IsClientPaidForItems = o.IsClientPaidForItems,
             IsDriverReimbursed = o.IsDriverReimbursed,
-
+            IsClientLate = o.IsClientLate,
             // 💳 الدفع
             PaymentMethod = o.PaymentMethod.ToString(),
             PaymentStatus = o.PaymentStatus.ToString(),
@@ -65,8 +66,8 @@ namespace Mashawer.Service.Implementations
             Status = o.Status.ToString(),
             CancelReason = o.CancelReason,
             OtherCancelReasonDetails = o.OtherCancelReasonDetails,
-            DistanceKm=o.DistanceKm,
-            
+            DistanceKm = o.DistanceKm,
+
 
             // 🕒 التاريخ
             CreatedAt = o.CreatedAt,
@@ -206,6 +207,7 @@ namespace Mashawer.Service.Implementations
                 .Select(OrderToDto)
                 .FirstOrDefaultAsync();
         }
+
     }
 }
 

@@ -14,11 +14,10 @@ namespace Mashawer.Core.Features.Orders.Commands.Models
         public double ToLongitude { get; set; }
 
         // 🏠 المواقع
-        public Address PickupLocation { get; set; }
-        public Address DeliveryLocation { get; set; }
+        public Address? PickupLocation { get; set; }
+        public Address? DeliveryLocation { get; set; }
         // 🛍️ إعدادات المشتريات
         public bool IsClientPaidForItems { get; set; } = true;
-        public decimal? ItemsTotalCost { get; set; }
         public bool IsDriverReimbursed { get; set; } = false;
 
         // 📝 وصف الشيء المطلوب توصيله (في حالة التوصيل فقط)

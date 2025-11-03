@@ -28,6 +28,9 @@
             public const string NearestRepresentative = Prefix + "NearestRepresentative";
             public const string UpdateRepresentativeLivelocation = Prefix + "UpdateRepresentativeLivelocation";
             public const string UpdateRepresentativeInfo = Prefix + "UpdateRepresentativeInfo";
+            public const string DriverArrived = Prefix + "DriverArrived/{orderId}";
+            public const string MarkDriverArrived = Prefix + "MarkDriverArrived/{orderId}";
+
 
         }
         public static class UserUpgradeRequestRouting
