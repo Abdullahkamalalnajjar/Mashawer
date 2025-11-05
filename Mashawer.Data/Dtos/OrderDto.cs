@@ -6,38 +6,27 @@ namespace Mashawer.Data.Dtos
     {
         public int Id { get; set; }
 
-        // 🧾 نوع الطلب (توصيل / مشتريات)
+        // 🧾 نوع الطلب (عام — يحتوي على Tasks)
         public string Type { get; set; }
 
-        // 📍 إحداثيات المواقع
-        public double FromLatitude { get; set; }
-        public double FromLongitude { get; set; }
-        public double ToLatitude { get; set; }
-        public double ToLongitude { get; set; }
-
-        public Address PickupLocation { get; set; }
-        public Address DeliveryLocation { get; set; }
-
-
         // 💰 الأسعار
-        public decimal DeliveryPrice { get; set; }             // سعر التوصيل
-        public decimal TotalPrice { get; set; }                // المجموع الكلي (توصيل + مشتريات)
-        public decimal DeducationDelivery { get; set; }        // خصم التوصيل (إن وجد)
-        public bool IsClientPaidForItems { get; set; }         // هل العميل دفع تمن المشتريات مسبقاً؟
-        public bool IsDriverReimbursed { get; set; }           // هل تم تعويض المندوب؟
+        public decimal DeliveryPrice { get; set; }
+        public decimal TotalPrice { get; set; }
+        public decimal DeducationDelivery { get; set; }
 
-        public bool IsClientLate { get; set; }         // هل العميل تأخر في الاستعداد للاستلام؟
+        public bool IsClientPaidForItems { get; set; }
+        public bool IsDriverReimbursed { get; set; }
 
-        // 💳 معلومات الدفع
-        public string PaymentMethod { get; set; }              // كاش / Paymob / Wallet
-        public string PaymentStatus { get; set; }              // مدفوع / غير مدفوع
-        public string? PaymobTransactionId { get; set; }       // رقم عملية الدفع (إن وجد)
-        public bool IsWalletUsed { get; set; }                 // هل تم الدفع من المحفظة؟
+        // 💳 الدفع
+        public string PaymentMethod { get; set; }
+        public string PaymentStatus { get; set; }
+        public string? PaymobTransactionId { get; set; }
+        public bool IsWalletUsed { get; set; }
 
         // 🚗 المركبة
-        public string VehicleType { get; set; }                // نوع المركبة المطلوبة
-        public string VehicleTypeOfDriver { get; set; }                // نوع المركبة المطلوبة
-        public string? VehicleNumber { get; set; }             // رقم المركبة (لو متاح)
+        public string VehicleType { get; set; } // المطلوبة
+        public string? VehicleTypeOfDriver { get; set; } // نوع مركبة السائق
+        public string? VehicleNumber { get; set; }
 
         // 📸 الصور
         public string? ItemPhotoBefore { get; set; }
@@ -47,20 +36,24 @@ namespace Mashawer.Data.Dtos
         public string Status { get; set; }
         public string? CancelReason { get; set; }
         public string? OtherCancelReasonDetails { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; }
+        public bool IsClientLate { get; set; }
 
         // 👤 المستخدمين
         public string ClientId { get; set; }
         public string ClientName { get; set; }
         public string ClientPhoneNumber { get; set; }
+
         public string? DriverId { get; set; }
         public string? DriverName { get; set; }
         public string? DriverPhoneNumber { get; set; }
         public string? DriverPhotoUrl { get; set; }
 
-        // 📏 المسافة التقريبية (يتم حسابها في الخدمة)
+        // 📏 المسافة
         public double? DistanceKm { get; set; }
-        public List<PurchaseItemDto> PurchaseItems { get; set; }
 
+        // 🧾 التفاصيل الفرعية
+        public List<OrderTaskDto> Tasks { get; set; } = new();
     }
+
 }

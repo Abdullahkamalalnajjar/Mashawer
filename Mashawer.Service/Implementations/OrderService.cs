@@ -1,12 +1,23 @@
-﻿using Mashawer.Data.Entities.ClasssOfOrder;
+﻿using Mashawer.Data.Dtos;
+using Mashawer.Data.Entities;
+using Mashawer.Data.Entities.ClasssOfOrder;
+using Mashawer.Data.Enums;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace Mashawer.Service.Implementations
 {
-    public class OrderService(IUnitOfWork unitOfWork, UserManager<ApplicationUser> userManager) : IOrderService
+    public class OrderService : IOrderService
     {
-        private readonly IUnitOfWork _unitOfWork = unitOfWork;
-        private readonly UserManager<ApplicationUser> _userManager = userManager;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly UserManager<ApplicationUser> _userManager;
+
+        public OrderService(IUnitOfWork unitOfWork, UserManager<ApplicationUser> userManager)
+        {
+            _unitOfWork = unitOfWork;
+            _userManager = userManager;
+        }
 
         public async Task<string> CreateOrderAsync(Order order, CancellationToken cancellationToken)
         {
@@ -14,40 +25,22 @@ namespace Mashawer.Service.Implementations
             return "Created";
         }
 
-        #region  Expression to convert Order to OrderDto
-        #region Expression to convert Order to OrderDto
+        #region Expression: Convert Order to OrderDto
         private static readonly Expression<Func<Order, OrderDto>> OrderToDto = o => new OrderDto
         {
             Id = o.Id,
-
-            // 🧾 نوع الطلب (توصيل / مشتريات)
             Type = o.Type.ToString(),
 
-            // 📍 المواقع
-            FromLatitude = o.FromLatitude,
-            FromLongitude = o.FromLongitude,
-            ToLatitude = o.ToLatitude,
-            ToLongitude = o.ToLongitude,
-            PickupLocation = o.PickupLocation,
-            DeliveryLocation = o.DeliveryLocation,
-
-            // 💰 الأسعار
-            DeliveryPrice = o.DeliveryPrice,
-            TotalPrice = o.TotalPrice ?? 0,  // لتفادي NullRefer,ence
-            DeducationDelivery = o.DeducationDelivery ?? 0,
-            IsClientPaidForItems = o.IsClientPaidForItems,
-            IsDriverReimbursed = o.IsDriverReimbursed,
-            IsClientLate = o.IsClientLate,
             // 💳 الدفع
             PaymentMethod = o.PaymentMethod.ToString(),
             PaymentStatus = o.PaymentStatus.ToString(),
             PaymobTransactionId = o.PaymobTransactionId,
             IsWalletUsed = o.IsWalletUsed,
 
-            // 🚗 المركبة
+            // 🚗 تفاصيل المركبة
             VehicleType = o.VehicleType,
-            VehicleNumber = o.Driver != null ? o.Driver.VehicleNumber : null,
             VehicleTypeOfDriver = o.Driver != null ? o.Driver.VehicleType : null,
+            VehicleNumber = o.Driver != null ? o.Driver.VehicleNumber : null,
 
             // 👤 المستخدمين
             ClientId = o.ClientId,
@@ -58,42 +51,58 @@ namespace Mashawer.Service.Implementations
             DriverPhoneNumber = o.Driver != null ? o.Driver.PhoneNumber : null,
             DriverPhotoUrl = o.Driver != null ? o.Driver.ProfilePictureUrl : null,
 
-            // 📸 الصور
-            ItemPhotoBefore = o.ItemPhotoBefore,
-            ItemPhotoAfter = o.ItemPhotoAfter,
-
-            // ⚙️ الحالة والتفاصيل
+            // ⚙️ الحالة
             Status = o.Status.ToString(),
             CancelReason = o.CancelReason,
             OtherCancelReasonDetails = o.OtherCancelReasonDetails,
-            DistanceKm = o.DistanceKm,
-
-
-            // 🕒 التاريخ
             CreatedAt = o.CreatedAt,
+            IsClientLate = o.IsClientLate,
 
-            // 🧾 عناصر المشتريات (لو نوع الطلب مشتريات)
-            PurchaseItems = o.PurchaseItems.Select(p => new PurchaseItemDto
+            // 💰 المجموع العام
+            TotalPrice = o.TotalPrice ?? 0,
+            DeducationDelivery = o.DeducationDelivery ?? 0,
+            DistanceKm = o.TotalDistanceKm,
+
+            // 🧩 المهام داخل الطلب
+            Tasks = o.Tasks.Select(t => new OrderTaskDto
             {
-                Id = p.Id,
-                Name = p.Name,
-                Quantity = p.Quantity,
-                PricePerUnit = p.Price,
-                PriceTotal = p.PriceTotal
+                Id = t.Id,
+                Type = t.Type.ToString(),
+                FromLatitude = t.FromLatitude,
+                FromLongitude = t.FromLongitude,
+                ToLatitude = t.ToLatitude,
+                ToLongitude = t.ToLongitude,
+                PickupLocation = t.PickupLocation,
+                DeliveryLocation = t.DeliveryLocation,
+                DeliveryPrice = t.DeliveryPrice,
+                DistanceKm = (double)t.DistanceKm,
+                DeliveryDescription = t.DeliveryDescription,
+                IsClientPaidForItems = t.IsClientPaidForItems,
+                IsDriverReimbursed = t.IsDriverReimbursed,
+                ItemPhotoBefore = t.ItemPhotoBefore,
+                ItemPhotoAfter = t.ItemPhotoAfter,
+                Status = t.Status.ToString(),
+                PurchaseItems = t.PurchaseItems.Select(p => new PurchaseItemDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Quantity = p.Quantity,
+                    PricePerUnit = p.Price,
+                    PriceTotal = p.PriceTotal
+                }).ToList()
             }).ToList()
         };
         #endregion
 
-
-        #endregion
         public async Task<IEnumerable<OrderDto>> GetOrdersAsync()
         {
             return await _unitOfWork.Orders.GetTableNoTracking()
-                 .Include(o => o.Client)
-                 .Include(o => o.Driver)
+                .Include(o => o.Client)
+                .Include(o => o.Driver)
+                .Include(o => o.Tasks)
+                    .ThenInclude(t => t.PurchaseItems)
                 .Select(OrderToDto)
                 .ToListAsync();
-
         }
 
         public async Task<IEnumerable<OrderDto>> GetOrdersByClientIdAsync(string clientId)
@@ -101,13 +110,15 @@ namespace Mashawer.Service.Implementations
             var client = await _userManager.FindByIdAsync(clientId);
             if (client == null)
                 return Enumerable.Empty<OrderDto>();
+
             return await _unitOfWork.Orders.GetTableNoTracking()
                 .Include(o => o.Client)
-                 .Include(o => o.Driver)
-               .Where(x => x.ClientId == clientId)
-               .Select(OrderToDto)
-               .ToListAsync();
-
+                .Include(o => o.Driver)
+                .Include(o => o.Tasks)
+                    .ThenInclude(t => t.PurchaseItems)
+                .Where(o => o.ClientId == clientId)
+                .Select(OrderToDto)
+                .ToListAsync();
         }
 
         public async Task<IEnumerable<OrderDto>> GetOrdersByDriverIdAsync(string driverId)
@@ -115,30 +126,33 @@ namespace Mashawer.Service.Implementations
             var driver = await _userManager.FindByIdAsync(driverId);
             if (driver == null)
                 return Enumerable.Empty<OrderDto>();
+
             return await _unitOfWork.Orders.GetTableNoTracking()
                 .Include(o => o.Client)
-                 .Include(o => o.Driver)
-              .Where(x => x.DriverId == driverId)
-              .Select(OrderToDto)
-              .ToListAsync();
+                .Include(o => o.Driver)
+                .Include(o => o.Tasks)
+                    .ThenInclude(t => t.PurchaseItems)
+                .Where(o => o.DriverId == driverId)
+                .Select(OrderToDto)
+                .ToListAsync();
         }
 
-        public async Task<string> AddOrderPhotosAsync(int orderId, string? photoBefore, string? photoAfter, CancellationToken cancellationToken)
+        public async Task<string> AddOrderPhotosAsync(int orderTaskId, string? photoBefore, string? photoAfter, CancellationToken cancellationToken)
         {
-            var order = await _unitOfWork.Orders.GetByIdAsync(orderId);
-            if (order == null)
-                return "Order not found";
+            var task = await _unitOfWork.OrderTasks.GetByIdAsync(orderTaskId);
+            if (task == null)
+                return "Order task not found";
 
             if (!string.IsNullOrEmpty(photoBefore))
-                order.ItemPhotoBefore = photoBefore;
+                task.ItemPhotoBefore = photoBefore;
 
             if (!string.IsNullOrEmpty(photoAfter))
-                order.ItemPhotoAfter = photoAfter;
+                task.ItemPhotoAfter = photoAfter;
 
-            _unitOfWork.Orders.Update(order);
+            _unitOfWork.OrderTasks.Update(task);
             await _unitOfWork.CompeleteAsync();
 
-            return "Photos updated successfully";
+            return "Task photos updated successfully";
         }
 
         public async Task<IEnumerable<OrderDto>> GetNearbyPendingOrdersAsync(double lat, double lng, double radiusKm, int take)
@@ -149,30 +163,29 @@ namespace Mashawer.Service.Implementations
             var minLng = lng - delta;
             var maxLng = lng + delta;
 
-            // ✅ جلب الطلبات القريبة باستخدام Projection مباشر
             var orders = await _unitOfWork.Orders.GetTableNoTracking()
+                .Include(o => o.Tasks)
                 .Where(o => o.Status == OrderStatus.Pending &&
-                            o.FromLatitude >= minLat && o.FromLatitude <= maxLat &&
-                            o.FromLongitude >= minLng && o.FromLongitude <= maxLng)
-                .Select(OrderToDto) // هنا بنستخدم الـ Expression الجاهز
+                            o.Tasks.Any(t =>
+                                t.FromLatitude >= minLat && t.FromLatitude <= maxLat &&
+                                t.FromLongitude >= minLng && t.FromLongitude <= maxLng))
+                .Select(OrderToDto)
                 .ToListAsync();
 
-            // ✅ حساب المسافة بعدين (لأنها مش محسوبة داخل الـ Expression)
             var nearby = orders
-                .Select(o => new
+                .Select(o =>
                 {
-                    Order = o,
-                    Distance = HaversineKm(lat, lng, o.FromLatitude, o.FromLongitude)
+                    var firstTask = o.Tasks.FirstOrDefault();
+                    if (firstTask == null) return null;
+
+                    var dist = HaversineKm(lat, lng, firstTask.FromLatitude, firstTask.FromLongitude);
+                    o.DistanceKm = Math.Round(dist, 2);
+                    return o;
                 })
-                .Where(x => x.Distance <= radiusKm)
-                .OrderBy(x => x.Distance)
+                .Where(o => o != null && o.DistanceKm <= radiusKm)
+                .OrderBy(o => o.DistanceKm)
                 .Take(take)
-                .Select(x =>
-                {
-                    x.Order.DistanceKm = Math.Round(x.Distance, 2);
-                    return x.Order;
-                })
-                .ToList();
+                .ToList()!;
 
             return nearby;
         }
@@ -188,26 +201,31 @@ namespace Mashawer.Service.Implementations
             double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
             return R * c;
         }
+
         private static double ToRad(double deg) => deg * (Math.PI / 180.0);
 
         public async Task TestingAsync()
         {
             var order = await _unitOfWork.Orders.GetTableAsTracking()
                 .FirstOrDefaultAsync(x => x.Id == 61);
-            order!.Status = OrderStatus.Completed;
-            _unitOfWork.Orders.Update(order);
-            await _unitOfWork.CompeleteAsync();
-
+            if (order != null)
+            {
+                order.Status = OrderStatus.Completed;
+                _unitOfWork.Orders.Update(order);
+                await _unitOfWork.CompeleteAsync();
+            }
         }
 
         public async Task<OrderDto?> GetOrderByIdAsync(int orderId)
         {
             return await _unitOfWork.Orders.GetTableNoTracking()
-                .Where(x => x.Id == orderId)
+                .Include(o => o.Client)
+                .Include(o => o.Driver)
+                .Include(o => o.Tasks)
+                    .ThenInclude(t => t.PurchaseItems)
+                .Where(o => o.Id == orderId)
                 .Select(OrderToDto)
                 .FirstOrDefaultAsync();
         }
-
     }
 }
-

@@ -1,21 +1,31 @@
 ﻿using Mashawer.Core.Features.Orders.Commands.Models;
 using Mashawer.Data.Entities.ClasssOfOrder;
 using Mashawer.Data.Enums;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace Mashawer.Core.Features.Orders.Commands.Handler
 {
-    public class OrderCommandHandler(IOrderService orderService, INotificationService notificationService, IMapper mapper, IUnitOfWork unitOfWork, UserManager<ApplicationUser> _userManager, IHttpContextAccessor httpContextAccessor) : ResponseHandler,
+    public class OrderCommandHandler(
+        IOrderService orderService,
+        INotificationService notificationService,
+        IMapper mapper,
+        IUnitOfWork unitOfWork,
+        UserManager<ApplicationUser> _userManager,
+        IHttpContextAccessor httpContextAccessor
+    ) : ResponseHandler,
         IRequestHandler<CreateOrderCommand, Response<string>>,
-        IRequestHandler<UpdateOrderStatusCommand, Response<string>>,
-        IRequestHandler<AddOrderPhotosCommand, Response<string>>
+        IRequestHandler<UpdateOrderStatusCommand, Response<string>>
+        //IRequestHandler<AddOrderPhotosCommand, Response<string>>
     {
         private readonly IOrderService _orderService = orderService;
         private readonly INotificationService _notificationService = notificationService;
         private readonly IMapper _mapper = mapper;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
-        private readonly Microsoft.AspNetCore.Identity.UserManager<ApplicationUser> userManager = _userManager;
+        private readonly UserManager<ApplicationUser> userManager = _userManager;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
 
+        // ✅ إنشاء الطلب
         public async Task<Response<string>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
         {
             var generalSetting = await _unitOfWork.GeneralSettings
@@ -25,29 +35,43 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
             // تحويل الـ Command إلى Entity
             var order = _mapper.Map<Order>(request);
 
-            // ✅ حساب المسافة وسعر التوصيل
-            order.DistanceKm = Math.Round(GeoHelper.CalculateDistance(
-                order.FromLatitude, order.FromLongitude,
-                order.ToLatitude, order.ToLongitude), 2);
+            // ✅ نحسب إجمالي المسافة وسعر التوصيل بناءً على جميع الـ Steps
+            double totalDistance = 0;
+            decimal totalDeliveryPrice = 0;
 
-            order.DeliveryPrice = GeoHelper.CalculateDeliveryPrice(
-                order.FromLatitude, order.FromLongitude,
-                order.ToLatitude, order.ToLongitude);
-
-            // تطبيق خصم التطبيق (لو موجود)
-            if (generalSetting != null && generalSetting.DiscountPercentage > 0)
+            foreach (var step in request.Orders)
             {
-                order.DeducationDelivery = order.DeliveryPrice * generalSetting.DiscountPercentage;
+                var stepDistance = GeoHelper.CalculateDistance(
+                    step.FromLatitude, step.FromLongitude,
+                    step.ToLatitude, step.ToLongitude
+                );
+
+                totalDistance += stepDistance;
+                totalDeliveryPrice += GeoHelper.CalculateDeliveryPrice(
+                    step.FromLatitude, step.FromLongitude,
+                    step.ToLatitude, step.ToLongitude
+                );
             }
 
-            // التعامل مع الدفع
+            order.TotalDistanceKm = Math.Round(totalDistance, 2);
+            order.TotalDeliveryPrice = totalDeliveryPrice;
+
+            // ✅ تطبيق خصم التطبيق (لو موجود)
+            if (generalSetting != null && generalSetting.DiscountPercentage > 0)
+            {
+                var discount = order.TotalDeliveryPrice * generalSetting.DiscountPercentage;
+                order.DeducationDelivery = discount;
+               
+            }
+
+            // ✅ إعداد حالة الدفع
             if (order.PaymentMethod == PaymentMethod.Visa || order.PaymentMethod == PaymentMethod.LocalWallet)
                 order.PaymentStatus = PaymentStatus.Pending;
 
-            // حساب الإجمالي (المشتريات + التوصيل)
+            // ✅ حساب الإجمالي (المشتريات + التوصيل)
             order.CalcTotalPrice();
 
-            // إنشاء الطلب
+            // ✅ إنشاء الطلب
             var result = await _orderService.CreateOrderAsync(order, cancellationToken);
 
             if (result == "Created")
@@ -59,10 +83,9 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
             return UnprocessableEntity<string>("An error occurred while creating the order");
         }
 
-
+        // ✅ تحديث حالة الطلب
         public async Task<Response<string>> Handle(UpdateOrderStatusCommand request, CancellationToken cancellationToken)
         {
-            // ✅ جلب الطلب مع العميل والسائق (لو موجود)
             var order = await _unitOfWork.Orders
                 .GetTableAsTracking()
                 .Include(o => o.Client)
@@ -72,11 +95,9 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
             if (order == null)
                 return NotFound<string>("Order not found.");
 
-            // ✅ لو الطلب بالفعل في نفس الحالة المطلوبة
             if (order.Status == request.NewStatus)
                 return BadRequest<string>($"Order is already {order.Status}.");
 
-            // ✅ لو السواق هو اللي بيأكد الطلب
             if (request.NewStatus == OrderStatus.Confirmed)
             {
                 if (string.IsNullOrWhiteSpace(request.DriverId))
@@ -86,28 +107,20 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
                 if (driver == null)
                     return BadRequest<string>("Driver not found.");
 
-                // ربط الطلب بالسائق الجديد
                 order.DriverId = driver.Id;
             }
 
-            // ✅ تحديث الحالة
             order.Status = request.NewStatus;
 
-            // ✅ إرسال إشعار (لو فعّلت الخدمة)
-            
+            // ✅ إرسال إشعار للعميل
             if (!string.IsNullOrEmpty(order.Client?.FCMToken))
             {
-                var title = request.NewStatus == OrderStatus.Confirmed
-                    ? "Order Confirmed"
-                    : request.NewStatus == OrderStatus.Cancelled
-                        ? "Order Cancelled"
-                        : "Order Updated";
-
-                var body = request.NewStatus == OrderStatus.Confirmed
-                    ? "Your order has been confirmed by a driver."
-                    : request.NewStatus == OrderStatus.Cancelled
-                        ? "Your order has been cancelled."
-                        : $"Order status changed to {request.NewStatus}.";
+                var (title, body) = request.NewStatus switch
+                {
+                    OrderStatus.Confirmed => ("Order Confirmed", "Your order has been confirmed by a driver."),
+                    OrderStatus.Cancelled => ("Order Cancelled", "Your order has been cancelled."),
+                    _ => ("Order Updated", $"Order status changed to {request.NewStatus}.")
+                };
 
                 await _notificationService.SendNotificationAsync(
                     userId: order.ClientId,
@@ -118,32 +131,30 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
                     orderId: order.Id
                 );
             }
-            
 
-            // ✅ حفظ التغييرات
             await _unitOfWork.CompeleteAsync();
-
             return Success($"Order status updated to {request.NewStatus} successfully.");
         }
 
+        // ✅ إضافة الصور
+        /*   async Task<Response<string>> IRequestHandler<AddOrderPhotosCommand, Response<string>>.Handle(AddOrderPhotosCommand request, CancellationToken cancellationToken)
+           {
+               var order = await _unitOfWork.Orders.GetByIdAsync(request.OrderId);
+               if (order == null)
+                   return new Response<string>("Order not found");
 
-        async Task<Response<string>> IRequestHandler<AddOrderPhotosCommand, Response<string>>.Handle(AddOrderPhotosCommand request, CancellationToken cancellationToken)
-        {
-            var order = await _unitOfWork.Orders.GetByIdAsync(request.OrderId);
-            if (order == null)
-                return new Response<string>("Order not found");
+               if (request.ItemPhotoBefore != null)
+                   order.ItemPhotoBefore = FileHelper.SaveFile(request.ItemPhotoBefore, "OrderPhotos", _httpContextAccessor);
 
-            if (request.ItemPhotoBefore != null)
-                order.ItemPhotoBefore = FileHelper.SaveFile(request.ItemPhotoBefore, "OrderPhotos", _httpContextAccessor);
+               if (request.ItemPhotoAfter != null)
+                   order.ItemPhotoAfter = FileHelper.SaveFile(request.ItemPhotoAfter, "OrderPhotos", _httpContextAccessor);
 
-            if (request.ItemPhotoAfter != null)
-                order.ItemPhotoAfter = FileHelper.SaveFile(request.ItemPhotoAfter, "OrderPhotos", _httpContextAccessor);
+               _unitOfWork.Orders.Update(order);
+               await _unitOfWork.CompeleteAsync();
 
-            _unitOfWork.Orders.Update(order);
-            await _unitOfWork.CompeleteAsync();
-
-            return new Response<string>("Photos updated successfully", true);
-        }
+               return new Response<string>("Photos updated successfully", true);
+           }
+         */
     }
-}
 
+}

@@ -5,42 +5,45 @@ namespace Mashawer.Core.Features.Orders.Commands.Models
 {
     public class CreateOrderCommand : IRequest<Response<string>>
     {
-        public OrderType Type { get; set; } = OrderType.Delivery; // توصيل أو مشتريات
+        // 🔹 معلومات عامة
+        public string ClientId { get; set; }             // معرف العميل
+        public string VehicleType { get; set; }          // نوع المركبة المطلوبة (دراجة / سيارة)
+        public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cash;
+        public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.NotPaid;
+        public bool IsWalletUsed { get; set; } = false;
+        public string? PaymobTransactionId { get; set; }
 
-        // 📍 الإحداثيات
+        // 🔹 الطلبات الفرعية (Stops)
+        public List<OrderStepDto> Orders { get; set; } = new(); // كل عنصر يمثل مرحلة (توصيل أو مشتريات)
+    }
+
+    public class OrderStepDto
+    {
+        public OrderType Type { get; set; } = OrderType.Delivery; // نوع الطلب (توصيل / مشتريات)
+
+        // 📍 المواقع
         public double FromLatitude { get; set; }
         public double FromLongitude { get; set; }
         public double ToLatitude { get; set; }
         public double ToLongitude { get; set; }
 
-        // 🏠 المواقع
         public Address? PickupLocation { get; set; }
         public Address? DeliveryLocation { get; set; }
-        // 🛍️ إعدادات المشتريات
+
+        // 🛍️ إعدادات خاصة بالمشتريات
         public bool IsClientPaidForItems { get; set; } = true;
         public bool IsDriverReimbursed { get; set; } = false;
 
-        // 📝 وصف الشيء المطلوب توصيله (في حالة التوصيل فقط)
+        // 📝 وصف العنصر
         public string? DeliveryDescription { get; set; }
 
-        // 💳 الدفع
-        public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cash;  // كاش، فيزا، محفظة محلية، محفظة التطبيق
-        public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.NotPaid;
-        public string? PaymobTransactionId { get; set; }
-        public bool IsWalletUsed { get; set; } = false;
+        // 📸 الصور (اختياري)
+        public string? ItemPhotoBefore { get; set; }
+        public string? ItemPhotoAfter { get; set; }
 
-        // 🚗 تفاصيل إضافية
-        public string VehicleType { get; set; }
-        public string ClientId { get; set; }
-       
-        public List<PrushaseItemDto>? PurchaseItems { get; set; }
-
-
+        // 🛒 العناصر المشتراة (لو النوع مشتريات)
+        public List<PurchaseItemDto>? PurchaseItems { get; set; } = new();
     }
-    public class PrushaseItemDto
-    {
-        public string Name { get; set; }
-        public int Quantity { get; set; }
-        public decimal Price { get; set; }
-    }
+
+   
 }

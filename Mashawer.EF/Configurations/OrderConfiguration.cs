@@ -1,5 +1,7 @@
 ﻿using Mashawer.Data.Entities.ClasssOfOrder;
 using Mashawer.Data.Enums;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Mashawer.EF.Configurations
 {
@@ -7,24 +9,43 @@ namespace Mashawer.EF.Configurations
     {
         public void Configure(EntityTypeBuilder<Order> builder)
         {
-            builder.OwnsOne(x => x.DeliveryLocation, n => { n.WithOwner(); });
-            builder.OwnsOne(x => x.PickupLocation, n => { n.WithOwner(); });
+            // 🔹 المفتاح الأساسي
+            builder.HasKey(o => o.Id);
+            // 🔹 العلاقة مع المهام
+            builder.HasMany(o => o.Tasks)
+                   .WithOne(t => t.Order)
+                   .HasForeignKey(t => t.OrderId)
+                   .OnDelete(DeleteBehavior.Cascade);
 
-            builder.Property(s => s.Status).HasConversion(o => o.ToString(), o => (OrderStatus)Enum.Parse(typeof(OrderStatus), o));
-            // builder.Property(s => s.CancelReason).HasConversion(o => o.ToString(), o => (CancelReason)Enum.Parse(typeof(CancelReason), o));
+            // 🔹 تحويل الـ Enum إلى String
+            builder.Property(s => s.Status)
+                   .HasConversion(
+                       o => o.ToString(),
+                       o => (OrderStatus)Enum.Parse(typeof(OrderStatus), o))
+                   .IsRequired();
 
-            // builder.Property(p => p.Price).HasColumnType("decimal(18,2)");
-            //  builder.Property(p => p.PriceAfterDeducation).HasColumnType("decimal(18,2)");
-            builder.Property(p => p.DeliveryPrice)
-                     .HasColumnType("decimal(18,2)");
+            builder.Property(s => s.PaymentMethod)
+                   .HasConversion(
+                       o => o.ToString(),
+                       o => (PaymentMethod)Enum.Parse(typeof(PaymentMethod), o))
+                   .IsRequired();
 
-            builder.Property(p => p.TotalPrice)
-                     .HasColumnType("decimal(18,2)");
-            builder.Property(p => p.DeducationDelivery)
-                   .HasColumnType("decimal(18,2)");
-            // إعدادات إضافية
+            builder.Property(s => s.PaymentStatus)
+                   .HasConversion(
+                       o => o.ToString(),
+                       o => (PaymentStatus)Enum.Parse(typeof(PaymentStatus), o))
+                   .IsRequired();
+
+            // 🔹 الدوال الرقمية (الأسعار)
+            builder.Property(p => p.TotalDeliveryPrice).HasColumnType("decimal(18,2)");
+            builder.Property(p => p.TotalPrice).HasColumnType("decimal(18,2)");
+            builder.Property(p => p.DeducationDelivery).HasColumnType("decimal(18,2)");
+
+            // 🔹 التاريخ الافتراضي
             builder.Property(o => o.CreatedAt)
                    .HasDefaultValueSql("GETUTCDATE()");
+
+            builder.ToTable("Orders");
         }
     }
 }

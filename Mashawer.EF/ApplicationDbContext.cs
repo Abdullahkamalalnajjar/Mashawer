@@ -26,5 +26,6 @@ namespace Mashawer.EF
         public DbSet<GeneralSetting> GeneralSettings { get; set; }
         public DbSet<UserNotification> UserNotifications { get; set; }
         public DbSet<PurchaseItem> PurchaseItems { get; set; }
+        public DbSet<OrderTask> OrderTasks { get; set; }
     }
 }
