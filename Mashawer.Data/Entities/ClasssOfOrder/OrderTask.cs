@@ -1,9 +1,4 @@
 ﻿using Mashawer.Data.Enums;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Mashawer.Data.Entities.ClasssOfOrder
 {
@@ -11,8 +6,6 @@ namespace Mashawer.Data.Entities.ClasssOfOrder
     {
         public int Id { get; set; }
 
-        public int OrderId { get; set; }
-        public Order Order { get; set; }
 
         public OrderType Type { get; set; } = OrderType.Delivery;
 
@@ -44,6 +37,9 @@ namespace Mashawer.Data.Entities.ClasssOfOrder
         public OrderStatus Status { get; set; } = OrderStatus.Pending;
 
         // 🛒 لو المهمة دي مشتريات
+        public int OrderId { get; set; }
+        public Order Order { get; set; }
         public ICollection<PurchaseItem>? PurchaseItems { get; set; } = new List<PurchaseItem>();
+
     }
 }

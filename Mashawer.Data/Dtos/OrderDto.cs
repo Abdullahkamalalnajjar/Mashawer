@@ -53,7 +53,7 @@ namespace Mashawer.Data.Dtos
         public double? DistanceKm { get; set; }
 
         // 🧾 التفاصيل الفرعية
-        public List<OrderTaskDto> Tasks { get; set; } = new();
+        public List<OrderTasksDto> Tasks { get; set; } = new();
     }
 
 }

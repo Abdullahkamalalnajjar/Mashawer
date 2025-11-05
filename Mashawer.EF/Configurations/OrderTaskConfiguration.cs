@@ -1,7 +1,5 @@
 ﻿using Mashawer.Data.Entities.ClasssOfOrder;
 using Mashawer.Data.Enums;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Mashawer.EF.Configurations
 {
@@ -39,9 +37,10 @@ namespace Mashawer.EF.Configurations
             builder.Property(t => t.DeliveryPrice).HasColumnType("decimal(18,2)");
             builder.Property(t => t.DistanceKm).HasColumnType("decimal(10,2)");
 
-            // 🔹 العلاقة مع عناصر المشتريات
+            // ✅ العلاقة مع عناصر المشتريات (تم تصحيحها)
             builder.HasMany(t => t.PurchaseItems)
-                   .WithOne()
+                   .WithOne(p => p.OrderTask)
+                   .HasForeignKey(p => p.OrderTaskId)
                    .OnDelete(DeleteBehavior.Cascade);
 
             builder.ToTable("OrderTasks");

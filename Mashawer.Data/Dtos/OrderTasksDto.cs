@@ -1,13 +1,8 @@
 ﻿using Mashawer.Data.Entities.ClasssOfOrder;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Mashawer.Data.Dtos
 {
-    public class OrderTaskDto
+    public class OrderTasksDto
     {
         public int Id { get; set; }
         public int OrderId { get; set; } // 🔗 لمعرفة لأي طلب تتبع

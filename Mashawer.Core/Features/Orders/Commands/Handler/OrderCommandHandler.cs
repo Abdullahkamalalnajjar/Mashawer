@@ -1,8 +1,6 @@
 ﻿using Mashawer.Core.Features.Orders.Commands.Models;
 using Mashawer.Data.Entities.ClasssOfOrder;
 using Mashawer.Data.Enums;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 
 namespace Mashawer.Core.Features.Orders.Commands.Handler
 {
@@ -16,7 +14,7 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
     ) : ResponseHandler,
         IRequestHandler<CreateOrderCommand, Response<string>>,
         IRequestHandler<UpdateOrderStatusCommand, Response<string>>
-        //IRequestHandler<AddOrderPhotosCommand, Response<string>>
+    //IRequestHandler<AddOrderPhotosCommand, Response<string>>
     {
         private readonly IOrderService _orderService = orderService;
         private readonly INotificationService _notificationService = notificationService;
@@ -39,7 +37,7 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
             double totalDistance = 0;
             decimal totalDeliveryPrice = 0;
 
-            foreach (var step in request.Orders)
+            foreach (var step in request.Tasks)
             {
                 var stepDistance = GeoHelper.CalculateDistance(
                     step.FromLatitude, step.FromLongitude,
@@ -61,7 +59,7 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
             {
                 var discount = order.TotalDeliveryPrice * generalSetting.DiscountPercentage;
                 order.DeducationDelivery = discount;
-               
+
             }
 
             // ✅ إعداد حالة الدفع

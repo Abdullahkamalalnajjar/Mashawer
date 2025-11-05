@@ -23,8 +23,6 @@ namespace Mashawer.Data.Entities.ClasssOfOrder
         public string? DriverId { get; set; }
         public ApplicationUser? Driver { get; set; }
 
-        // 🚗 تفاصيل الرحلة العامة
-        public string VehicleType { get; set; }
         public OrderStatus Status { get; set; } = OrderStatus.Pending;
         public string? CancelReason { get; set; }
         public string? OtherCancelReasonDetails { get; set; }
@@ -34,6 +32,7 @@ namespace Mashawer.Data.Entities.ClasssOfOrder
         public decimal? DeducationDelivery { get; set; }
         public decimal? TotalDeliveryPrice { get; set; }
         public decimal? TotalPrice { get; set; }
+
         public double? TotalDistanceKm { get; set; }
 
         // 🕓 بيانات التوقيت

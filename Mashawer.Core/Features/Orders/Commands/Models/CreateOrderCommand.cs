@@ -7,17 +7,16 @@ namespace Mashawer.Core.Features.Orders.Commands.Models
     {
         // 🔹 معلومات عامة
         public string ClientId { get; set; }             // معرف العميل
-        public string VehicleType { get; set; }          // نوع المركبة المطلوبة (دراجة / سيارة)
         public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.Cash;
         public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.NotPaid;
         public bool IsWalletUsed { get; set; } = false;
         public string? PaymobTransactionId { get; set; }
 
         // 🔹 الطلبات الفرعية (Stops)
-        public List<OrderStepDto> Orders { get; set; } = new(); // كل عنصر يمثل مرحلة (توصيل أو مشتريات)
+        public List<OrderTaskDto> Tasks { get; set; } = new(); // كل عنصر يمثل مرحلة (توصيل أو مشتريات)
     }
 
-    public class OrderStepDto
+    public class OrderTaskDto
     {
         public OrderType Type { get; set; } = OrderType.Delivery; // نوع الطلب (توصيل / مشتريات)
 
@@ -42,8 +41,17 @@ namespace Mashawer.Core.Features.Orders.Commands.Models
         public string? ItemPhotoAfter { get; set; }
 
         // 🛒 العناصر المشتراة (لو النوع مشتريات)
-        public List<PurchaseItemDto>? PurchaseItems { get; set; } = new();
+        public List<PurchaseItemsDto>? PurchaseItems { get; set; } = new();
+    }
+    public class PurchaseItemsDto
+    {
+        public string Name { get; set; }
+        public int Quantity { get; set; } = 1;
+        public decimal Price { get; set; }
+
+
     }
 
-   
+
+
 }

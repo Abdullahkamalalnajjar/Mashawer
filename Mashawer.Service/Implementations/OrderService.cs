@@ -1,9 +1,4 @@
-﻿using Mashawer.Data.Dtos;
-using Mashawer.Data.Entities;
-using Mashawer.Data.Entities.ClasssOfOrder;
-using Mashawer.Data.Enums;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
+﻿using Mashawer.Data.Entities.ClasssOfOrder;
 using System.Linq.Expressions;
 
 namespace Mashawer.Service.Implementations
@@ -38,7 +33,6 @@ namespace Mashawer.Service.Implementations
             IsWalletUsed = o.IsWalletUsed,
 
             // 🚗 تفاصيل المركبة
-            VehicleType = o.VehicleType,
             VehicleTypeOfDriver = o.Driver != null ? o.Driver.VehicleType : null,
             VehicleNumber = o.Driver != null ? o.Driver.VehicleNumber : null,
 
@@ -64,7 +58,7 @@ namespace Mashawer.Service.Implementations
             DistanceKm = o.TotalDistanceKm,
 
             // 🧩 المهام داخل الطلب
-            Tasks = o.Tasks.Select(t => new OrderTaskDto
+            Tasks = o.Tasks.Select(t => new OrderTasksDto
             {
                 Id = t.Id,
                 Type = t.Type.ToString(),
@@ -87,7 +81,7 @@ namespace Mashawer.Service.Implementations
                     Id = p.Id,
                     Name = p.Name,
                     Quantity = p.Quantity,
-                    PricePerUnit = p.Price,
+                    Price = p.Price,
                     PriceTotal = p.PriceTotal
                 }).ToList()
             }).ToList()
