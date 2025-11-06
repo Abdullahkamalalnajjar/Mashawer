@@ -56,6 +56,17 @@ namespace Mashawer.Data.Entities.ClasssOfOrder
                 TotalPrice = 0;
             }
         }
+        // calc total delivery price
+        public void CalcTotalDeliveryPrice()
+        {
+            if (Tasks != null && Tasks.Any())
+            {
+                TotalDeliveryPrice = Tasks.Sum(t => t.DeliveryPrice);
+            }
+            else
+            {
+                TotalDeliveryPrice = 0;
+            }
+        }
     }
-
-    }
+}

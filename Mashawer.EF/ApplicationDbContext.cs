@@ -27,5 +27,7 @@ namespace Mashawer.EF
         public DbSet<UserNotification> UserNotifications { get; set; }
         public DbSet<PurchaseItem> PurchaseItems { get; set; }
         public DbSet<OrderTask> OrderTasks { get; set; }
+        public DbSet<Conversation> Conversations { get; set; }
+        public DbSet<ChatMessage> Messages { get; set; }
     }
 }

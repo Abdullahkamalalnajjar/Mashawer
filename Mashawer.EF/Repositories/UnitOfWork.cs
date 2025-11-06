@@ -17,6 +17,7 @@ namespace Mashawer.EF.Repositories
         public IUserNotificationRepository Notifications { get; private set; }
         public IPurchaseItemRepository PurchaseItems { get; private set; }
         public IOrderTaskRepository OrderTasks { get; private set; }
+        public IMessageRepository Messages { get; private set; }
 
 
         public UnitOfWork(ApplicationDbContext context)
@@ -32,6 +33,7 @@ namespace Mashawer.EF.Repositories
             Notifications = new UserNotificationRepository(_context);
             PurchaseItems = new PurchaseItemRepository(_context);
             OrderTasks = new OrderTaskRepository(_context);
+            Messages = new MessageRepository(_context);
         }
         public async Task<int> CompeleteAsync()
         {

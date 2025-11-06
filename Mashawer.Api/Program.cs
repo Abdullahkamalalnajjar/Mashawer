@@ -95,6 +95,7 @@ app.UseMiddleware<ErrorHandlerMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<ChatHub>("/chatHub");
 app.MapHub<LocationHub>("/liveLocationHub");
 
 app.Run();

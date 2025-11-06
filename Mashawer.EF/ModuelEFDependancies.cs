@@ -15,7 +15,8 @@ namespace Mashawer.EF
             services.AddTransient<IGeneralSettingRepository, GeneralSettingRepository>();
             services.AddTransient<IUserNotificationRepository, UserNotificationRepository>();
             services.AddTransient<IPurchaseItemRepository, PurchaseItemRepository>();
-            services.AddTransient<IOrderTaskRepository,OrderTaskRepository>();
+            services.AddTransient<IOrderTaskRepository, OrderTaskRepository>();
+            services.AddTransient<IMessageRepository, MessageRepository>();
 
             return services;
         }

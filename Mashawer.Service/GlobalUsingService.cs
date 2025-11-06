@@ -3,6 +3,7 @@ global using MailKit.Net.Smtp;
 global using MailKit.Security;
 global using Mashawer.Data.Consts;
 global using Mashawer.Data.Dtos;
+global using Mashawer.Data.Dtos.Chat;
 global using Mashawer.Data.Entities;
 global using Mashawer.Data.Enums;
 global using Mashawer.Data.Helpers;

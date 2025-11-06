@@ -54,6 +54,7 @@ namespace Mashawer.Service.Implementations
 
             // 💰 المجموع العام
             TotalPrice = o.TotalPrice ?? 0,
+            DeliveryPrice = o.TotalDeliveryPrice ?? 0,
             DeducationDelivery = o.DeducationDelivery ?? 0,
             DistanceKm = o.TotalDistanceKm,
 
@@ -61,6 +62,7 @@ namespace Mashawer.Service.Implementations
             Tasks = o.Tasks.Select(t => new OrderTasksDto
             {
                 Id = t.Id,
+                OrderId = t.OrderId,
                 Type = t.Type.ToString(),
                 FromLatitude = t.FromLatitude,
                 FromLongitude = t.FromLongitude,

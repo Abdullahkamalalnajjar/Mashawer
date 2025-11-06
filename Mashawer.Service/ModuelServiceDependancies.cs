@@ -23,6 +23,7 @@ namespace Mashawer.Service
             services.AddTransient<IOrderService, OrderService>();
             services.AddTransient<INotificationService, NotificationService>();
             services.AddTransient<IGeneralSettingService, GeneralSettingService>();
+            services.AddTransient<IChatService, ChatService>();
             services.AddHttpClient<PaymobService>(client =>
             {
                 client.Timeout = TimeSpan.FromSeconds(60);
@@ -30,6 +31,7 @@ namespace Mashawer.Service
             services.AddScoped<PaymobService>();
             services.AddSignalR();
             services.AddScoped<LocationHub>();
+            services.AddScoped<ChatHub>();
 
             return services;
         }

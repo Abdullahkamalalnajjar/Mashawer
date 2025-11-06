@@ -30,27 +30,35 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
                 .GetTableNoTracking()
                 .FirstOrDefaultAsync(cancellationToken);
 
-            // تحويل الـ Command إلى Entity
+            // 🌀 تحويل الـ Command إلى Entity
             var order = _mapper.Map<Order>(request);
 
-            // ✅ نحسب إجمالي المسافة وسعر التوصيل بناءً على جميع الـ Steps
             double totalDistance = 0;
             decimal totalDeliveryPrice = 0;
 
-            foreach (var step in request.Tasks)
+            // ✅ حساب المسافة والسعر لكل مهمة داخل الطلب
+            foreach (var task in order.Tasks)
             {
-                var stepDistance = GeoHelper.CalculateDistance(
-                    step.FromLatitude, step.FromLongitude,
-                    step.ToLatitude, step.ToLongitude
+                // حساب المسافة
+                double taskDistance = GeoHelper.CalculateDistance(
+                    task.FromLatitude, task.FromLongitude,
+                    task.ToLatitude, task.ToLongitude
                 );
 
-                totalDistance += stepDistance;
-                totalDeliveryPrice += GeoHelper.CalculateDeliveryPrice(
-                    step.FromLatitude, step.FromLongitude,
-                    step.ToLatitude, step.ToLongitude
+                task.DistanceKm = Math.Round(taskDistance, 2);
+
+                // حساب السعر
+                task.DeliveryPrice = GeoHelper.CalculateDeliveryPrice(
+                    task.FromLatitude, task.FromLongitude,
+                    task.ToLatitude, task.ToLongitude
                 );
+
+                // جمع الإجماليات
+                totalDistance += task.DistanceKm;
+                totalDeliveryPrice += task.DeliveryPrice;
             }
 
+            // ✅ تخزين الإجماليات داخل الطلب
             order.TotalDistanceKm = Math.Round(totalDistance, 2);
             order.TotalDeliveryPrice = totalDeliveryPrice;
 
@@ -59,17 +67,16 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
             {
                 var discount = order.TotalDeliveryPrice * generalSetting.DiscountPercentage;
                 order.DeducationDelivery = discount;
-
             }
 
-            // ✅ إعداد حالة الدفع
+            // ✅ حالة الدفع
             if (order.PaymentMethod == PaymentMethod.Visa || order.PaymentMethod == PaymentMethod.LocalWallet)
                 order.PaymentStatus = PaymentStatus.Pending;
 
-            // ✅ حساب الإجمالي (المشتريات + التوصيل)
+            // ✅ حساب الإجمالي الكلي
             order.CalcTotalPrice();
-
-            // ✅ إنشاء الطلب
+            order.CalcTotalDeliveryPrice();
+            // ✅ حفظ الطلب في الداتا بيز
             var result = await _orderService.CreateOrderAsync(order, cancellationToken);
 
             if (result == "Created")
@@ -80,6 +87,7 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
 
             return UnprocessableEntity<string>("An error occurred while creating the order");
         }
+
 
         // ✅ تحديث حالة الطلب
         public async Task<Response<string>> Handle(UpdateOrderStatusCommand request, CancellationToken cancellationToken)
