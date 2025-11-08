@@ -39,6 +39,7 @@ namespace Mashawer.Core.Features.Orders.Commands.Models
         // 📸 الصور (اختياري)
         public string? ItemPhotoBefore { get; set; }
         public string? ItemPhotoAfter { get; set; }
+        public double DistanceKm { get; set; } = 0;    
 
         // 🛒 العناصر المشتراة (لو النوع مشتريات)
         public List<PurchaseItemsDto>? PurchaseItems { get; set; } = new();

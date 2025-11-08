@@ -47,7 +47,6 @@ namespace Mashawer.Data.Entities.ClasssOfOrder
             if (Tasks != null && Tasks.Any())
             {
                 TotalPrice = Tasks.Sum(t =>
-                    t.DeliveryPrice +
                     (t.PurchaseItems != null ? t.PurchaseItems.Sum(p => p.PriceTotal) : 0)
                 );
             }

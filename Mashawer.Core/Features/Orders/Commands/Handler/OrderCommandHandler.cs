@@ -23,7 +23,6 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
         private readonly UserManager<ApplicationUser> userManager = _userManager;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
 
-        // ✅ إنشاء الطلب
         public async Task<Response<string>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
         {
             var generalSetting = await _unitOfWork.GeneralSettings
@@ -36,47 +35,41 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
             double totalDistance = 0;
             decimal totalDeliveryPrice = 0;
 
-            // ✅ حساب المسافة والسعر لكل مهمة داخل الطلب
+            // ✅ جمع المسافات من Flutter وحساب السعر لكل مهمة
             foreach (var task in order.Tasks)
             {
-                // حساب المسافة
-                double taskDistance = GeoHelper.CalculateDistance(
-                    task.FromLatitude, task.FromLongitude,
-                    task.ToLatitude, task.ToLongitude
-                );
+                double distance = task.DistanceKm; // المسافة من Flutter
+                totalDistance += distance;
 
-                task.DistanceKm = Math.Round(taskDistance, 2);
+                // ✅ سعر كل مهمة = المسافة بالكيلومتر (قابل للتعديل لاحقًا)
 
-                // حساب السعر
-                task.DeliveryPrice = GeoHelper.CalculateDeliveryPrice(
-                    task.FromLatitude, task.FromLongitude,
-                    task.ToLatitude, task.ToLongitude
-                );
-
-                // جمع الإجماليات
-                totalDistance += task.DistanceKm;
-                totalDeliveryPrice += task.DeliveryPrice;
+                task.DeliveryPrice = ((decimal)Math.Round(distance, 2) * 7) + 15;
             }
+
+            // ✅ حساب إجمالي سعر التوصيل
+            totalDeliveryPrice = (decimal)totalDistance * 7m;
 
             // ✅ تخزين الإجماليات داخل الطلب
             order.TotalDistanceKm = Math.Round(totalDistance, 2);
-            order.TotalDeliveryPrice = totalDeliveryPrice;
+            order.TotalDeliveryPrice = Math.Round(totalDeliveryPrice, 2) + 15m;
 
-            // ✅ تطبيق خصم التطبيق (لو موجود)
+            // ✅ تطبيق خصم التطبيق (إن وجد)
             if (generalSetting != null && generalSetting.DiscountPercentage > 0)
             {
                 var discount = order.TotalDeliveryPrice * generalSetting.DiscountPercentage;
                 order.DeducationDelivery = discount;
             }
 
-            // ✅ حالة الدفع
+            // ✅ تحديد حالة الدفع
             if (order.PaymentMethod == PaymentMethod.Visa || order.PaymentMethod == PaymentMethod.LocalWallet)
                 order.PaymentStatus = PaymentStatus.Pending;
 
-            // ✅ حساب الإجمالي الكلي
+            // ✅ حساب السعر الإجمالي للطلب (السعر الكلي = سعر العناصر + سعر التوصيل)
             order.CalcTotalPrice();
             order.CalcTotalDeliveryPrice();
-            // ✅ حفظ الطلب في الداتا بيز
+            order.TotalPrice = order.TotalPrice + order.TotalDeliveryPrice;
+
+            // ✅ حفظ الطلب في قاعدة البيانات
             var result = await _orderService.CreateOrderAsync(order, cancellationToken);
 
             if (result == "Created")
@@ -87,6 +80,7 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
 
             return UnprocessableEntity<string>("An error occurred while creating the order");
         }
+
 
 
         // ✅ تحديث حالة الطلب
