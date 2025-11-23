@@ -18,7 +18,8 @@ namespace Mashawer.EF.Repositories
         public IPurchaseItemRepository PurchaseItems { get; private set; }
         public IOrderTaskRepository OrderTasks { get; private set; }
         public IMessageRepository Messages { get; private set; }
-
+        public IClientCancelOrderRepository ClientCancelOrders { get; }
+        public IRepresentitiveCancelOrderRepository RepresentitiveCancelOrders { get; }
 
         public UnitOfWork(ApplicationDbContext context)
         {
@@ -34,6 +35,8 @@ namespace Mashawer.EF.Repositories
             PurchaseItems = new PurchaseItemRepository(_context);
             OrderTasks = new OrderTaskRepository(_context);
             Messages = new MessageRepository(_context);
+            ClientCancelOrders = new ClientCancelOrderRepository(_context);
+            RepresentitiveCancelOrders = new RepresentitiveCancelOrderRepository(_context);
         }
         public async Task<int> CompeleteAsync()
         {

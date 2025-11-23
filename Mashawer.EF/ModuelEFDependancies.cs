@@ -1,5 +1,4 @@
-﻿
-namespace Mashawer.EF
+﻿namespace Mashawer.EF
 {
     public static class ModuelEFDependancies
     {
@@ -17,6 +16,8 @@ namespace Mashawer.EF
             services.AddTransient<IPurchaseItemRepository, PurchaseItemRepository>();
             services.AddTransient<IOrderTaskRepository, OrderTaskRepository>();
             services.AddTransient<IMessageRepository, MessageRepository>();
+            services.AddTransient<IClientCancelOrderRepository, ClientCancelOrderRepository>();
+            services.AddTransient<IRepresentitiveCancelOrderRepository, RepresentitiveCancelOrderRepository>();
 
             return services;
         }

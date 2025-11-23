@@ -35,7 +35,7 @@ namespace Mashawer.Data.Entities.ClasssOfOrder
 
         // 💬 الحالة الحالية للمهمة
         public OrderStatus Status { get; set; } = OrderStatus.Pending;
-
+        public DateTime DeliveredAt { get; set; }
         // 🛒 لو المهمة دي مشتريات
         public int OrderId { get; set; }
         public Order Order { get; set; }

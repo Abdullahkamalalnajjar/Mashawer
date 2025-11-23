@@ -29,5 +29,8 @@ namespace Mashawer.EF
         public DbSet<OrderTask> OrderTasks { get; set; }
         public DbSet<Conversation> Conversations { get; set; }
         public DbSet<ChatMessage> Messages { get; set; }
+        public DbSet<ClientCancelOrder> ClientCancelOrders { get; set; }
+        public DbSet<RepresentitiveCancelOrder> RepresentitiveCancelOrders { get; set; }
     }
+
 }

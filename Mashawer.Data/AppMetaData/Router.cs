@@ -30,6 +30,7 @@
             public const string UpdateRepresentativeInfo = Prefix + "UpdateRepresentativeInfo";
             public const string DriverArrived = Prefix + "DriverArrived/{orderId}";
             public const string MarkDriverArrived = Prefix + "MarkDriverArrived/{orderId}";
+            public const string AddDeliveredTimeToOrderTask = Prefix + "AddDeliveredTimeToOrderTask/{orderTaskId}";
 
 
         }
@@ -152,6 +153,16 @@
             public const string Create = Prefix + "Create";
             public const string Edit = Prefix + "Edit";
 
+        }
+        public static class ClientCancelOrderRouting
+        {
+            private const string Prefix = Rule + "/" + "ClientCancelOrder/";
+            public const string List = Prefix + ListRoute;
+            public const string GetById = Prefix + SingleRoute;
+            public const string Create = Prefix + "Create";
+            public const string Edit = Prefix + "Edit";
+            public const string Delete = Prefix + "Delete/{id}";
+            public const string Paginated = Prefix + "Paginated";
         }
     }
 }

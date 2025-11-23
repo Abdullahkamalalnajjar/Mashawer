@@ -1,5 +1,4 @@
-﻿
-namespace Mashawer.Data.Interfaces
+﻿namespace Mashawer.Data.Interfaces
 {
     public interface IUnitOfWork : IDisposable
     {
@@ -15,6 +14,8 @@ namespace Mashawer.Data.Interfaces
         IPurchaseItemRepository PurchaseItems { get; }
         IOrderTaskRepository OrderTasks { get; }
         IMessageRepository Messages { get; }
+        IClientCancelOrderRepository ClientCancelOrders { get; }
+        IRepresentitiveCancelOrderRepository RepresentitiveCancelOrders { get; }
         Task<int> CompeleteAsync();
         Task<IDbContextTransaction> BeginTransactionAsync();
 

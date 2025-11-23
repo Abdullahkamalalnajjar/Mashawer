@@ -32,6 +32,12 @@
     <Folder Include="Features\Authentication\Command\Validators\" />
     <Folder Include="Features\Authentication\Queries\" />
     <Folder Include="Features\Claims\Commands\" />
+    <Folder Include="Features\RepresentitiveCancelOrder\Command\Handler\" />
+    <Folder Include="Features\RepresentitiveCancelOrder\Command\Model\" />
+    <Folder Include="Features\RepresentitiveCancelOrder\Query\Handler\" />
+    <Folder Include="Features\RepresentitiveCancelOrder\Query\Model\" />
+    <Folder Include="Features\ClientCancelOrders\Query\Handler\" />
+    <Folder Include="Features\ClientCancelOrders\Query\Model\" />
     <Folder Include="Features\Orders\Queries\Results\" />
     <Folder Include="Features\Otp\Commands\Handler\" />
     <Folder Include="Features\Representatives\Queries\Results\" />
