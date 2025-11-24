@@ -11,18 +11,21 @@
     <Compile Remove="Features - Copy %283%29\**" />
     <Compile Remove="Features - Copy\**" />
     <Compile Remove="Features\Representatives\Commands\**" />
+    <Compile Remove="Features\RepresentitiveCancelOrder\**" />
     <Compile Remove="Mapping - Copy %282%29\**" />
     <Compile Remove="Mapping - Copy\**" />
     <EmbeddedResource Remove="Features - Copy %282%29\**" />
     <EmbeddedResource Remove="Features - Copy %283%29\**" />
     <EmbeddedResource Remove="Features - Copy\**" />
     <EmbeddedResource Remove="Features\Representatives\Commands\**" />
+    <EmbeddedResource Remove="Features\RepresentitiveCancelOrder\**" />
     <EmbeddedResource Remove="Mapping - Copy %282%29\**" />
     <EmbeddedResource Remove="Mapping - Copy\**" />
     <None Remove="Features - Copy %282%29\**" />
     <None Remove="Features - Copy %283%29\**" />
     <None Remove="Features - Copy\**" />
     <None Remove="Features\Representatives\Commands\**" />
+    <None Remove="Features\RepresentitiveCancelOrder\**" />
     <None Remove="Mapping - Copy %282%29\**" />
     <None Remove="Mapping - Copy\**" />
   </ItemGroup>
@@ -32,10 +35,6 @@
     <Folder Include="Features\Authentication\Command\Validators\" />
     <Folder Include="Features\Authentication\Queries\" />
     <Folder Include="Features\Claims\Commands\" />
-    <Folder Include="Features\RepresentitiveCancelOrder\Command\Handler\" />
-    <Folder Include="Features\RepresentitiveCancelOrder\Command\Model\" />
-    <Folder Include="Features\RepresentitiveCancelOrder\Query\Handler\" />
-    <Folder Include="Features\RepresentitiveCancelOrder\Query\Model\" />
     <Folder Include="Features\ClientCancelOrders\Query\Handler\" />
     <Folder Include="Features\ClientCancelOrders\Query\Model\" />
     <Folder Include="Features\Orders\Queries\Results\" />

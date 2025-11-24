@@ -52,5 +52,17 @@ namespace Mashawer.Api.Controllers
             var result = await Mediator.Send(command);
             return NewResult(result);
         }
+        [HttpPost(Router.RepresentativeRouting.MarkOrderTaskIsComplete)]
+        public async Task<IActionResult> MarkOrderTaskIsComplete([FromQuery] MarkOrderTaskIsCompleteCommand command)
+        {
+            var result = await Mediator.Send(command);
+            return NewResult(result);
+        }
+        [HttpPost(Router.RepresentativeRouting.TaskDeliveredAt)]
+        public async Task<IActionResult> TaskDeliveredAt([FromBody] TaskDeliveredAtCommand command)
+        {
+            var result = await Mediator.Send(command);
+            return NewResult(result);
+        }
     }
 }

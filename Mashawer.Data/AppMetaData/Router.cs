@@ -28,11 +28,13 @@
             public const string NearestRepresentative = Prefix + "NearestRepresentative";
             public const string UpdateRepresentativeLivelocation = Prefix + "UpdateRepresentativeLivelocation";
             public const string UpdateRepresentativeInfo = Prefix + "UpdateRepresentativeInfo";
+            public const string MarkOrderTaskIsComplete = Prefix + "MarkOrderTaskIsComplete";
+            public const string TaskDeliveredAt = Prefix + "TaskDeliveredAt";
             public const string DriverArrived = Prefix + "DriverArrived/{orderId}";
             public const string MarkDriverArrived = Prefix + "MarkDriverArrived/{orderId}";
             public const string AddDeliveredTimeToOrderTask = Prefix + "AddDeliveredTimeToOrderTask/{orderTaskId}";
 
-
+                
         }
         public static class UserUpgradeRequestRouting
         {
@@ -157,6 +159,16 @@
         public static class ClientCancelOrderRouting
         {
             private const string Prefix = Rule + "/" + "ClientCancelOrder/";
+            public const string List = Prefix + ListRoute;
+            public const string GetById = Prefix + SingleRoute;
+            public const string Create = Prefix + "Create";
+            public const string Edit = Prefix + "Edit";
+            public const string Delete = Prefix + "Delete/{id}";
+            public const string Paginated = Prefix + "Paginated";
+        }
+        public static class RepresentitiveCancelOrderRouting
+        {
+            private const string Prefix = Rule + "/" + "RepresentitiveCancelOrder/";
             public const string List = Prefix + ListRoute;
             public const string GetById = Prefix + SingleRoute;
             public const string Create = Prefix + "Create";
