@@ -1,6 +1,4 @@
-﻿using Mashawer.Data.Entities.ClasssOfOrder;
-
-namespace Mashawer.Data.Dtos
+﻿namespace Mashawer.Data.Dtos
 {
     public class OrderDto
     {
@@ -43,6 +41,7 @@ namespace Mashawer.Data.Dtos
         public string ClientId { get; set; }
         public string ClientName { get; set; }
         public string ClientPhoneNumber { get; set; }
+        public string? ClientPhotoUrl { get; set; }
 
         public string? DriverId { get; set; }
         public string? DriverName { get; set; }

@@ -40,6 +40,7 @@ namespace Mashawer.Service.Implementations
             ClientId = o.ClientId,
             ClientName = o.Client.FullName,
             ClientPhoneNumber = o.Client.PhoneNumber,
+            ClientPhotoUrl = o.Client.ProfilePictureUrl,
             DriverId = o.DriverId,
             DriverName = o.Driver != null ? o.Driver.FullName : null,
             DriverPhoneNumber = o.Driver != null ? o.Driver.PhoneNumber : null,
