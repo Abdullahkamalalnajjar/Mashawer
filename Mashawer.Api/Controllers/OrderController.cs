@@ -55,7 +55,7 @@ namespace Mashawer.Api.Controllers
             return NewResult(result);
         }
         [HttpPost(Router.OrderRouting.UploadOrderPhotos)]
-        public async Task<IActionResult> UploadOrderPhotos([FromForm] AddOrderPhotosCommand command, CancellationToken cancellationToken)
+        public async Task<IActionResult> UploadOrderPhotos([FromForm] AddOrderTaskPhotosCommand command, CancellationToken cancellationToken)
         {
             var result = await Mediator.Send(command, cancellationToken);
 

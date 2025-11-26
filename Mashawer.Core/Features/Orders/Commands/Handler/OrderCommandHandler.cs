@@ -13,8 +13,8 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
         IHttpContextAccessor httpContextAccessor
     ) : ResponseHandler,
         IRequestHandler<CreateOrderCommand, Response<string>>,
-        IRequestHandler<UpdateOrderStatusCommand, Response<string>>
-    //IRequestHandler<AddOrderPhotosCommand, Response<string>>
+        IRequestHandler<UpdateOrderStatusCommand, Response<string>>,
+        IRequestHandler<AddOrderTaskPhotosCommand, Response<string>>
     {
         private readonly IOrderService _orderService = orderService;
         private readonly INotificationService _notificationService = notificationService;
@@ -137,24 +137,24 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
         }
 
         // ✅ إضافة الصور
-        /*   async Task<Response<string>> IRequestHandler<AddOrderPhotosCommand, Response<string>>.Handle(AddOrderPhotosCommand request, CancellationToken cancellationToken)
-           {
-               var order = await _unitOfWork.Orders.GetByIdAsync(request.OrderId);
-               if (order == null)
-                   return new Response<string>("Order not found");
+        async Task<Response<string>> IRequestHandler<AddOrderTaskPhotosCommand, Response<string>>.Handle(AddOrderTaskPhotosCommand request, CancellationToken cancellationToken)
+        {
+            var orderTask = await _unitOfWork.OrderTasks.GetByIdAsync(request.OrderTaskId);
+            if (orderTask == null)
+                return new Response<string>("Order not found");
 
-               if (request.ItemPhotoBefore != null)
-                   order.ItemPhotoBefore = FileHelper.SaveFile(request.ItemPhotoBefore, "OrderPhotos", _httpContextAccessor);
+            if (request.ItemPhotoBefore != null)
+                orderTask.ItemPhotoBefore = FileHelper.SaveFile(request.ItemPhotoBefore, "OrderTaskPhotos", _httpContextAccessor);
 
-               if (request.ItemPhotoAfter != null)
-                   order.ItemPhotoAfter = FileHelper.SaveFile(request.ItemPhotoAfter, "OrderPhotos", _httpContextAccessor);
+            if (request.ItemPhotoAfter != null)
+                orderTask.ItemPhotoAfter = FileHelper.SaveFile(request.ItemPhotoAfter, "OrderTaskPhotos", _httpContextAccessor);
 
-               _unitOfWork.Orders.Update(order);
-               await _unitOfWork.CompeleteAsync();
+            _unitOfWork.OrderTasks.Update(orderTask);
+            await _unitOfWork.CompeleteAsync();
 
-               return new Response<string>("Photos updated successfully", true);
-           }
-         */
+            return new Response<string>("Photos updated successfully", true);
+        }
+
     }
 
 }
