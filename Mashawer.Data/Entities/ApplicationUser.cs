@@ -19,6 +19,7 @@ namespace Mashawer.Data.Entities
         public string? VehicleType { get; set; }
         public string? VehicleNumber { get; set; }
         public string? VehiclePictureUrl { get; set; }
+        public string? VehicleColor { get; set; }
         public string? FCMToken { get; set; }
         public List<RefreshToken>? RefreshTokens { get; set; } = new List<RefreshToken>();
     }

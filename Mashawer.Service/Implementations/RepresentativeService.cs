@@ -38,7 +38,7 @@
                     RepresentativeLatitude = x.RepresentativeLatitude,
                     RepresentativeLongitude = x.RepresentativeLongitude
                 }).ToListAsync();
-          
+
             var deliveryPrice = CalculateDeliveryPrice(fromLatitude, fromLongitude, toLatitude, toLongitude);
             var nearest = representatives
                 .Select(rep =>
@@ -91,12 +91,13 @@
             return "Updated";
         }
 
-        public async Task<string> UpdateInfo(string representativeId, IFormFile vehicalPicture, string vehicalNumber, string type)
+        public async Task<string> UpdateInfo(string representativeId, IFormFile vehicalPicture, string vehicalNumber, string type, string vehicleColor)
         {
             var user = await _unitOfWork.Users.GetTableAsTracking().FirstOrDefaultAsync(x => x.Id == representativeId);
             if (user == null) return "NotFound";
             user.VehicleNumber = vehicalNumber;
             user.VehicleType = type;
+            user.VehicleColor = vehicleColor;
             user.VehiclePictureUrl = FileHelper.SaveFile(vehicalPicture, "VehicalPicture", _httpContextAccessor);
             _unitOfWork.Users.Update(user);
             await _unitOfWork.CompeleteAsync();
@@ -134,6 +135,25 @@
             _unitOfWork.Orders.Update(order);
             await _unitOfWork.CompeleteAsync();
             return "Updated";
+        }
+
+        public async Task<RepresentativeInfoDto?> GetRepresentativeInfoAsync(string representativeId)
+        {
+            return await _unitOfWork.Users.GetTableNoTracking()
+                .Select(x => new RepresentativeInfoDto
+                {
+                    Id = x.Id,
+                    FullName = x.FullName,
+                    Email = x.Email,
+                    PhoneNumber = x.PhoneNumber,
+                    ProfilePictureUrl = x.ProfilePictureUrl,
+                    Address = x.RepresentativeAddress,
+                    VehicleNumber = x.VehicleNumber,
+                    VehicleType = x.VehicleType,
+                    VehicleUrl = x.VehiclePictureUrl,
+                    VehicleColor = x.VehicleColor
+                })
+                .FirstOrDefaultAsync(x => x.Id == representativeId);
         }
     }
 }

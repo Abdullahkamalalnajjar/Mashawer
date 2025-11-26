@@ -176,6 +176,7 @@
             public const string Delete = Prefix + "Delete/{id}";
             public const string Paginated = Prefix + "Paginated";
         }
+     
         public static class AgentRouting
         {
             private const string Prefix = Rule + "/" + "Agent/";
@@ -187,5 +188,6 @@
             public const string Paginated = Prefix + "Paginated";
             public const string GetOrdersByAgentAddress = Prefix + "GetOrdersByAgentAddress";
         }
+
     }
 }

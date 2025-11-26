@@ -24,7 +24,7 @@ namespace Mashawer.Core.Features.Representatives.Command.Handler
         }
         public async Task<Response<string>> Handle(UpdateRepresentativeInfoCommand request, CancellationToken cancellationToken)
         {
-            var result = await _representativeService.UpdateInfo(request.RepresentativeId, request.VehicleUrl!, request.VehicleNumber!, request.VehicleType!);
+            var result = await _representativeService.UpdateInfo(request.RepresentativeId, request.VehicleUrl!, request.VehicleNumber!, request.VehicleType!, request.VehicleColor!);
             if (result == "NotFound")
                 return (NotFound<string>("NotFound"));
             return (Success<string>(result));
@@ -67,14 +67,14 @@ namespace Mashawer.Core.Features.Representatives.Command.Handler
 
         public async Task<Response<string>> Handle(TaskDeliveredAtCommand request, CancellationToken cancellationToken)
         {
-                var orderTask = await _unitOfWork.OrderTasks
-                .GetTableAsTracking()
-                .FirstOrDefaultAsync(x => x.Id == request.TaskId);
+            var orderTask = await _unitOfWork.OrderTasks
+            .GetTableAsTracking()
+            .FirstOrDefaultAsync(x => x.Id == request.TaskId);
 
             if (orderTask == null)
                 return NotFound<string>("Order task not found.");
 
-            orderTask.DeliveredAt=request.DeliveredAt;
+            orderTask.DeliveredAt = request.DeliveredAt;
             _unitOfWork.OrderTasks.Update(orderTask);
             await _unitOfWork.CompeleteAsync();
             return Success<string>("Order task Arrived");

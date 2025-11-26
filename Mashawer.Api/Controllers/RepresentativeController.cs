@@ -64,5 +64,11 @@ namespace Mashawer.Api.Controllers
             var result = await Mediator.Send(command);
             return NewResult(result);
         }
+        [HttpGet(Router.RepresentativeRouting.GetById)]
+        public async Task<IActionResult> GetById([FromRoute] string id)
+        {
+            var result = await Mediator.Send(new GetRepresentitiveByIdQuery(id));
+            return NewResult(result);
+        }
     }
 }

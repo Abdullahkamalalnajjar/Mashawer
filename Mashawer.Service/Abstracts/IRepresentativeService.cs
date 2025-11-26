@@ -5,9 +5,11 @@
         public Task<IEnumerable<RepresentativeDTO>> GetAllRepresentativesByAddressAsync(string address);
         public Task<IEnumerable<NearestRepresentativeDto>> GetNearestRepresentativeAsync(double fromLatitude, double fromLongitude, double toLatitude, double toLongitude);
         public Task<string> UpdateLocation(string userId, double latitude, double longitude);
-        public Task<string> UpdateInfo(string representativeId, IFormFile ImageUrl, string numberPanal, string model);
+        public Task<string> UpdateInfo(string representativeId, IFormFile vehicalPicture, string vehicalNumber, string type, string vehicleColor);
+
         public Task<string> MarkDriverArrivedAsync(int orderId);
         public Task<string> MarkIsClientLate(int orderId);
+        public Task<RepresentativeInfoDto> GetRepresentativeInfoAsync(string representativeId);
 
     }
 }
