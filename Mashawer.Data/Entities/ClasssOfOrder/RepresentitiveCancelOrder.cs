@@ -4,11 +4,11 @@
     {
         public int Id { get; set; }
 
-        public string CancelReason { get; set; }
+        public string Reason { get; set; }
         public int OrderId { get; set; }
         public Order Order { get; set; }
-        public string RepresentitiveId { get; set; }
-        public ApplicationUser Representitive { get; set; }
+        public string UserId { get; set; }
+        public ApplicationUser User { get; set; }
     }
 }
 //1- order status = pending , ordertaks = pending

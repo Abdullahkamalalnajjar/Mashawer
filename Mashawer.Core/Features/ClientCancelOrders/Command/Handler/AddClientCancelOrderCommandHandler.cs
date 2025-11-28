@@ -19,13 +19,13 @@ namespace Mashawer.Core.Features.ClientCancelOrders.Command.Handler
 
         public async Task<Response<string>> Handle(AddClientCancelOrderCommand request, CancellationToken cancellationToken)
         {
-            var order = await _unitOfWork.Orders.GetTableAsTracking().Include(x => x.Driver).Include(x => x.Client).Where(x => x.Id == request.OrderId).FirstOrDefaultAsync();
+            var order = await _unitOfWork.Orders.GetTableAsTracking().Include(x => x.Driver).Include(x => x.Tasks).Include(x => x.Client).Where(x => x.Id == request.OrderId).FirstOrDefaultAsync();
             if (order == null)
             {
                 return NotFound<string>("Order not found.");
             }
             // update order status to cancelled by client
-            order.Status = Data.Enums.OrderStatus.Cancelled;
+            order.Status = OrderStatus.Cancelled;
             // make order's driver id null
             order.DriverId = null;
             // make ordertask is cancelled

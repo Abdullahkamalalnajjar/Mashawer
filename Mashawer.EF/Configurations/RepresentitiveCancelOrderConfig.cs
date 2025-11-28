@@ -8,9 +8,9 @@ namespace Mashawer.EF.Configurations
         {
 
             // Relationship with User (AspNetUsers)
-            builder.HasOne(x => x.Representitive)
+            builder.HasOne(x => x.User)
                    .WithMany()
-                   .HasForeignKey(x => x.RepresentitiveId)
+                   .HasForeignKey(x => x.UserId)
                    .OnDelete(DeleteBehavior.Cascade); // allowed
 
             // Relationship with Orders
