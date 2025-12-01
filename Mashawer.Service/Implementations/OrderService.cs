@@ -35,6 +35,7 @@ namespace Mashawer.Service.Implementations
             // 🚗 تفاصيل المركبة
             VehicleTypeOfDriver = o.Driver != null ? o.Driver.VehicleType : null,
             VehicleNumber = o.Driver != null ? o.Driver.VehicleNumber : null,
+            VehicleColor = o.Driver != null ? o.Driver.VehicleColor : null,
 
             // 👤 المستخدمين
             ClientId = o.ClientId,
@@ -45,6 +46,8 @@ namespace Mashawer.Service.Implementations
             DriverName = o.Driver != null ? o.Driver.FullName : null,
             DriverPhoneNumber = o.Driver != null ? o.Driver.PhoneNumber : null,
             DriverPhotoUrl = o.Driver != null ? o.Driver.ProfilePictureUrl : null,
+            VehiclePhotoUrl = o.Driver != null ? o.Driver.VehiclePictureUrl : null,
+            VehicleType = o.Driver.VehicleType,
 
             // ⚙️ الحالة
             Status = o.Status.ToString(),
@@ -74,6 +77,7 @@ namespace Mashawer.Service.Implementations
                 PickupLocation = t.PickupLocation,
                 DeliveryLocation = t.DeliveryLocation,
                 DeliveryPrice = t.DeliveryPrice,
+
                 DistanceKm = (double)t.DistanceKm,
                 DeliveryDescription = t.DeliveryDescription,
                 IsClientPaidForItems = t.IsClientPaidForItems,
@@ -225,6 +229,30 @@ namespace Mashawer.Service.Implementations
                 .Where(o => o.Id == orderId)
                 .Select(OrderToDto)
                 .FirstOrDefaultAsync();
+        }
+        public async Task DeleteOrderAfterOneHour()
+        {
+            // احسب الوقت قبل ساعة واحدة
+            var oneHourAgo = DateTime.UtcNow.AddHours(-1);
+
+            // جلب الطلبات مباشرة من قاعدة البيانات باستخدام شرط قابل للترجمة
+            var orders = await _unitOfWork.Orders.GetTableAsTracking()
+                .Where(o => o.Status == OrderStatus.Pending && o.CreatedAt <= oneHourAgo)
+                .ToListAsync();
+
+            foreach (var order in orders)
+            {
+                await _unitOfWork.Orders.Delete(order);
+                await _unitOfWork.CompeleteAsync();
+
+            }
+
+        }
+
+        private bool IsOrderPendingForOneHour(DateTime createdAt)
+        {
+            return (DateTime.UtcNow - createdAt).TotalHours >= 1;
+
         }
     }
 }

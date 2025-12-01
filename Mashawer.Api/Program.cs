@@ -1,10 +1,12 @@
-using FirebaseAdmin;
+﻿using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
+using Hangfire;
 using Mashawer.Api.Configurations.Swagger;
 using Mashawer.Core;
 using Mashawer.Core.Middleware;
 using Mashawer.EF;
 using Mashawer.Service;
+using Mashawer.Service.Abstracts;
 using Mashawer.Service.Implementations;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,6 +18,11 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
+// تسجيل Hangfire server
+builder.Services.AddHangfire(x =>
+    x.UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddHangfireServer();
 #region Dependencies
 builder.Services.AddServiceDependencies()
    .AddCoreDependencies()
@@ -61,6 +68,27 @@ builder.Services.AddCors(options =>
 #endregion
 
 var app = builder.Build();
+#region 
+// dashboard hangfire
+
+app.UseHangfireDashboard("/hangfire");
+#pragma warning restore CS0618 // Type or member is obsolete
+app.Lifetime.ApplicationStarted.Register(() =>
+{
+    using var scope = app.Services.CreateScope();
+    var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+
+    // تذكير الحضور الساعة 7 مساءً
+    recurringJobManager.AddOrUpdate<IOrderService>(
+        "DeleteOrderAfterOneHour",
+        job => job.DeleteOrderAfterOneHour(),
+            Cron.Hourly, // كل ساعة بالضبط (في الدقيقة 00)
+    TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time"));
+
+
+});
+
+#endregion
 #region Update Database on Startup
 using (var scope = app.Services.CreateScope())
 {

@@ -25,7 +25,8 @@
         public string VehicleType { get; set; } // المطلوبة
         public string? VehicleTypeOfDriver { get; set; } // نوع مركبة السائق
         public string? VehicleNumber { get; set; }
-
+        public string? VehiclePhotoUrl { get; set; }
+        public string ? VehicleColor { get; set; }
         // 📸 الصور
         public string? ItemPhotoBefore { get; set; }
         public string? ItemPhotoAfter { get; set; }
