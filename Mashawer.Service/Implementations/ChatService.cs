@@ -282,9 +282,12 @@ namespace Mashawer.Service.Implementations
         public async Task<int> GetUnreadChatsCountAsync(string userId)
         {
             return await _context.Conversations
-                .Where(c => (c.SenderId == userId || c.ReceiverId == userId) &&
-                            c.Messages.Any(m => m.ReceiverId == userId && !m.IsRead))
+                .Where(c =>
+                    (c.SenderId == userId || c.ReceiverId == userId) &&
+                    c.Messages.Any(m => m.SenderId != userId && !m.IsRead)
+                )
                 .CountAsync();
         }
+
     }
 }

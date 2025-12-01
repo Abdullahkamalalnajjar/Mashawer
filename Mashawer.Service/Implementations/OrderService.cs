@@ -69,6 +69,8 @@ namespace Mashawer.Service.Implementations
                 FromLongitude = t.FromLongitude,
                 ToLatitude = t.ToLatitude,
                 ToLongitude = t.ToLongitude,
+                GoogleMapAddressFrom = t.GoogleMapAddressFrom,
+                GoogleMapAddressTo = t.GoogleMapAddressTo,
                 PickupLocation = t.PickupLocation,
                 DeliveryLocation = t.DeliveryLocation,
                 DeliveryPrice = t.DeliveryPrice,

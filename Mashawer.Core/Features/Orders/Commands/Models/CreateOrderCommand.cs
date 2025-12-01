@@ -25,7 +25,8 @@ namespace Mashawer.Core.Features.Orders.Commands.Models
         public double FromLongitude { get; set; }
         public double ToLatitude { get; set; }
         public double ToLongitude { get; set; }
-
+        public string ? GoogleMapAddressFrom { get; set; }
+        public string ? GoogleMapAddressTo { get; set; }
         public Address? PickupLocation { get; set; }
         public Address? DeliveryLocation { get; set; }
 
