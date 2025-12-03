@@ -32,26 +32,26 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
             // 🌀 تحويل الـ Command إلى Entity
             var order = _mapper.Map<Order>(request);
 
-            double totalDistance = 0;
-            decimal totalDeliveryPrice = 0;
+            //double totalDistance = 0;
+            //decimal totalDeliveryPrice = 0;
 
-            // ✅ جمع المسافات من Flutter وحساب السعر لكل مهمة
-            foreach (var task in order.Tasks)
-            {
-                double distance = task.DistanceKm; // المسافة من Flutter
-                totalDistance += distance;
+            //// ✅ جمع المسافات من Flutter وحساب السعر لكل مهمة
+            //foreach (var task in order.Tasks)
+            //{
+            //    double distance = task.DistanceKm; // المسافة من Flutter
+            //    totalDistance += distance;
 
-                // ✅ سعر كل مهمة = المسافة بالكيلومتر (قابل للتعديل لاحقًا)
+            //    // ✅ سعر كل مهمة = المسافة بالكيلومتر (قابل للتعديل لاحقًا)
 
-                task.DeliveryPrice = ((decimal)Math.Round(distance, 2) * 7) + 15;
-            }
+            //  //  task.DeliveryPrice = ((decimal)Math.Round(distance, 2) * 7) + 15;
+            //}
 
-            // ✅ حساب إجمالي سعر التوصيل
-            totalDeliveryPrice = (decimal)totalDistance * 7m;
+            //// ✅ حساب إجمالي سعر التوصيل
+            //totalDeliveryPrice = (decimal)totalDistance * 7m;
 
-            // ✅ تخزين الإجماليات داخل الطلب
-            order.TotalDistanceKm = Math.Round(totalDistance, 2);
-            order.TotalDeliveryPrice = Math.Round(totalDeliveryPrice, 2) + 15m;
+            //// ✅ تخزين الإجماليات داخل الطلب
+            //order.TotalDistanceKm = Math.Round(totalDistance, 2);
+           // order.TotalDeliveryPrice = Math.Round(totalDeliveryPrice, 2) + 15m;
 
             // ✅ تطبيق خصم التطبيق (إن وجد)
             if (generalSetting != null && generalSetting.DiscountPercentage > 0)
@@ -65,9 +65,9 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
                 order.PaymentStatus = PaymentStatus.Pending;
 
             // ✅ حساب السعر الإجمالي للطلب (السعر الكلي = سعر العناصر + سعر التوصيل)
-            order.CalcTotalPrice();
-            order.CalcTotalDeliveryPrice();
-            order.TotalPrice = order.TotalPrice + order.TotalDeliveryPrice;
+        //    order.CalcTotalPrice();
+         //   order.CalcTotalDeliveryPrice();
+          //  order.TotalPrice = order.TotalPrice + order.TotalDeliveryPrice;
 
             // ✅ حفظ الطلب في قاعدة البيانات
             var result = await _orderService.CreateOrderAsync(order, cancellationToken);

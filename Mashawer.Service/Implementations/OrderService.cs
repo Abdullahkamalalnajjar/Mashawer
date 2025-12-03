@@ -76,9 +76,9 @@ namespace Mashawer.Service.Implementations
                 GoogleMapAddressTo = t.GoogleMapAddressTo,
                 PickupLocation = t.PickupLocation,
                 DeliveryLocation = t.DeliveryLocation,
-                DeliveryPrice = t.DeliveryPrice,
-
-                DistanceKm = (double)t.DistanceKm,
+           //     DeliveryPrice = t.DeliveryPrice,
+                PaymentLocation = t.PaymentLocation,
+           //     DistanceKm = (double)t.DistanceKm,
                 DeliveryDescription = t.DeliveryDescription,
                 IsClientPaidForItems = t.IsClientPaidForItems,
                 IsDriverReimbursed = t.IsDriverReimbursed,

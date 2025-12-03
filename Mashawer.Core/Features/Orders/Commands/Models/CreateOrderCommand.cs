@@ -11,6 +11,10 @@ namespace Mashawer.Core.Features.Orders.Commands.Models
         public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.NotPaid;
         public bool IsWalletUsed { get; set; } = false;
         public string? PaymobTransactionId { get; set; }
+        public decimal? TotalDeliveryPrice { get; set; }
+        public decimal? TotalPrice { get; set; }
+
+        public double? TotalDistanceKm { get; set; }
 
         // 🔹 الطلبات الفرعية (Stops)
         public List<OrderTaskDto> Tasks { get; set; } = new(); // كل عنصر يمثل مرحلة (توصيل أو مشتريات)
@@ -23,12 +27,13 @@ namespace Mashawer.Core.Features.Orders.Commands.Models
         // 📍 المواقع
         public double FromLatitude { get; set; }
         public double FromLongitude { get; set; }
-        public double ToLatitude { get; set; }
-        public double ToLongitude { get; set; }
+        public double? ToLatitude { get; set; }
+        public double? ToLongitude { get; set; }
         public string ? GoogleMapAddressFrom { get; set; }
         public string ? GoogleMapAddressTo { get; set; }
         public Address? PickupLocation { get; set; }
         public Address? DeliveryLocation { get; set; }
+        public string? PaymentLocation { get; set; }
 
         // 🛍️ إعدادات خاصة بالمشتريات
         public bool IsClientPaidForItems { get; set; } = true;
@@ -40,7 +45,7 @@ namespace Mashawer.Core.Features.Orders.Commands.Models
         // 📸 الصور (اختياري)
         public string? ItemPhotoBefore { get; set; }
         public string? ItemPhotoAfter { get; set; }
-        public double DistanceKm { get; set; } = 0;    
+     //   public double DistanceKm { get; set; } = 0;    
 
         // 🛒 العناصر المشتراة (لو النوع مشتريات)
         public List<PurchaseItemsDto>? PurchaseItems { get; set; } = new();

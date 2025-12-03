@@ -41,31 +41,31 @@ namespace Mashawer.Data.Entities.ClasssOfOrder
         // 🧩 العلاقة الجديدة — المهام داخل الطلب
         public ICollection<OrderTask> Tasks { get; set; } = new List<OrderTask>();
 
-        // 🧮 دالة لحساب الإجمالي من كل المهام
-        public void CalcTotalPrice()
-        {
-            if (Tasks != null && Tasks.Any())
-            {
-                TotalPrice = Tasks.Sum(t =>
-                    (t.PurchaseItems != null ? t.PurchaseItems.Sum(p => p.PriceTotal) : 0)
-                );
-            }
-            else
-            {
-                TotalPrice = 0;
-            }
-        }
-        // calc total delivery price
-        public void CalcTotalDeliveryPrice()
-        {
-            if (Tasks != null && Tasks.Any())
-            {
-                TotalDeliveryPrice = Tasks.Sum(t => t.DeliveryPrice);
-            }
-            else
-            {
-                TotalDeliveryPrice = 0;
-            }
-        }
+        //// 🧮 دالة لحساب الإجمالي من كل المهام
+        //public void CalcTotalPrice()
+        //{
+        //    if (Tasks != null && Tasks.Any())
+        //    {
+        //        TotalPrice = Tasks.Sum(t =>
+        //            (t.PurchaseItems != null ? t.PurchaseItems.Sum(p => p.PriceTotal) : 0)
+        //        );
+        //    }
+        //    else
+        //    {
+        //        TotalPrice = 0;
+        //    }
+        //}
+        //// calc total delivery price
+        //public void CalcTotalDeliveryPrice()
+        //{
+        //    if (Tasks != null && Tasks.Any())
+        //    {
+        //        TotalDeliveryPrice = Tasks.Sum(t => t.DeliveryPrice);
+        //    }
+        //    else
+        //    {
+        //        TotalDeliveryPrice = 0;
+        //    }
+        //}
     }
 }

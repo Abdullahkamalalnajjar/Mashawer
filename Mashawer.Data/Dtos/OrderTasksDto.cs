@@ -12,16 +12,17 @@ namespace Mashawer.Data.Dtos
         // 📍 المواقع
         public double FromLatitude { get; set; }
         public double FromLongitude { get; set; }
-        public double ToLatitude { get; set; }
-        public double ToLongitude { get; set; }
+        public double? ToLatitude { get; set; }
+        public double? ToLongitude { get; set; }
         public string? GoogleMapAddressFrom { get; set; }
         public string? GoogleMapAddressTo { get; set; }
         public Address? PickupLocation { get; set; }
         public Address? DeliveryLocation { get; set; }
+        public string? PaymentLocation { get; set; }
 
         // 💰 تفاصيل
-        public decimal DeliveryPrice { get; set; }
-        public double DistanceKm { get; set; }
+        //public decimal DeliveryPrice { get; set; }
+        //public double DistanceKm { get; set; }
         public string? DeliveryDescription { get; set; }
 
         // 💳 الدفع الفرعي (في حالة المشتريات)

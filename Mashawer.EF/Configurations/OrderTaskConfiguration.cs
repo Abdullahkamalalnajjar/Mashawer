@@ -34,8 +34,8 @@ namespace Mashawer.EF.Configurations
                    .IsRequired();
 
             // 🔹 خصائص رقمية
-            builder.Property(t => t.DeliveryPrice).HasColumnType("decimal(18,2)");
-            builder.Property(t => t.DistanceKm).HasColumnType("decimal(10,2)");
+            //builder.Property(t => t.DeliveryPrice).HasColumnType("decimal(18,2)");
+            //builder.Property(t => t.DistanceKm).HasColumnType("decimal(10,2)");
 
             // ✅ العلاقة مع عناصر المشتريات (تم تصحيحها)
             builder.HasMany(t => t.PurchaseItems)
