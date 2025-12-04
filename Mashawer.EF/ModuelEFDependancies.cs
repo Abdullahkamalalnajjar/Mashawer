@@ -18,6 +18,7 @@
             services.AddTransient<IMessageRepository, MessageRepository>();
             services.AddTransient<IClientCancelOrderRepository, ClientCancelOrderRepository>();
             services.AddTransient<IRepresentitiveCancelOrderRepository, RepresentitiveCancelOrderRepository>();
+            services.AddTransient<IRatingRepository, RatingRepository>(); // Added Rating repository
 
             return services;
         }

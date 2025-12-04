@@ -176,7 +176,7 @@
             public const string Delete = Prefix + "Delete/{id}";
             public const string Paginated = Prefix + "Paginated";
         }
-     
+
         public static class AgentRouting
         {
             private const string Prefix = Rule + "/" + "Agent/";
@@ -187,6 +187,16 @@
             public const string Delete = Prefix + "Delete/{id}";
             public const string Paginated = Prefix + "Paginated";
             public const string GetOrdersByAgentAddress = Prefix + "GetOrdersByAgentAddress";
+        }
+        public static class RatingRouting
+        {
+            private const string Prefix = Rule + "/" + "Rating/";
+            public const string List = Prefix + ListRoute; // Get all ratings
+            public const string GetById = Prefix + SingleRoute; // Get a specific rating by ID
+            public const string Create = Prefix + "Create"; // Add a new rating
+            public const string Delete = Prefix + "Delete/{id}"; // Delete a rating by ID
+            public const string GetByUserId = Prefix + "GetByUserId/{userId}"; // Get ratings for a specific user
+            public const string GetAverageRating = Prefix + "GetAverageRating/{userId}"; // Get average rating for a user
         }
 
     }

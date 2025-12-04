@@ -1,25 +1,22 @@
-﻿
-namespace Mashawer.EF.Repositories
+﻿namespace Mashawer.EF.Repositories
 {
     public class UnitOfWork : IUnitOfWork
     {
         private readonly ApplicationDbContext _context;
         public IUserRepository Users { get; private set; }
-
         public IDeleteRecoredRepository DeleteRecoreds { get; private set; }
         public IUserUpgradeRequestRepository UserUpgradeRequests { get; private set; }
         public IOrderRepository Orders { get; private set; }
         public IWalletTransactionRepository WalletTransactions { get; private set; }
         public IWalletRepository Wallets { get; private set; }
-
         public IGeneralSettingRepository GeneralSettings { get; private set; }
-
         public IUserNotificationRepository Notifications { get; private set; }
         public IPurchaseItemRepository PurchaseItems { get; private set; }
         public IOrderTaskRepository OrderTasks { get; private set; }
         public IMessageRepository Messages { get; private set; }
-        public IClientCancelOrderRepository ClientCancelOrders { get; }
-        public IRepresentitiveCancelOrderRepository RepresentitiveCancelOrders { get; }
+        public IClientCancelOrderRepository ClientCancelOrders { get; private set; }
+        public IRepresentitiveCancelOrderRepository RepresentitiveCancelOrders { get; private set; }
+        public IRatingRepository Ratings { get; private set; } // Added Rating repository
 
         public UnitOfWork(ApplicationDbContext context)
         {
@@ -37,6 +34,7 @@ namespace Mashawer.EF.Repositories
             Messages = new MessageRepository(_context);
             ClientCancelOrders = new ClientCancelOrderRepository(_context);
             RepresentitiveCancelOrders = new RepresentitiveCancelOrderRepository(_context);
+            Ratings = new RatingRepository(_context); // Initialize Rating repository
         }
         public async Task<int> CompeleteAsync()
         {

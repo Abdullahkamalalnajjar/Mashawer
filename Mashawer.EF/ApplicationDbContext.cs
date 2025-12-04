@@ -31,6 +31,7 @@ namespace Mashawer.EF
         public DbSet<ChatMessage> Messages { get; set; }
         public DbSet<ClientCancelOrder> ClientCancelOrders { get; set; }
         public DbSet<RepresentitiveCancelOrder> RepresentitiveCancel { get; set; }
-    }
+        public DbSet<Rating> Ratings { get; set; }
+        }
 
 }

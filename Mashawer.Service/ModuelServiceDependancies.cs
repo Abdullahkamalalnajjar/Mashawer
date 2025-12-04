@@ -27,6 +27,7 @@ namespace Mashawer.Service
             services.AddTransient<IClientCancelOrderService, ClientCancelOrderService>();
             services.AddTransient<IRepresentitiveCancelOrderService, RepresentitiveCancelOrderService>();
             services.AddTransient<IAgentService, AgentService>();
+            services.AddTransient<IRatingService, RatingService>();
             services.AddHttpClient<PaymobService>(client =>
             {
                 client.Timeout = TimeSpan.FromSeconds(60);
