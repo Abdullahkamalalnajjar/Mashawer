@@ -23,9 +23,6 @@
         public class CreateCardPaymentRequest
         {
             public int AmountCents { get; set; }        // مثال: 10000 = 100 EGP
-            public string Currency { get; set; } = "EGP";
-            public string? MerchantOrderId { get; set; } // لو سيبتها فاضية هنولد GUID
-            public PaymobBillingData Billing { get; set; } = new();
         }
 
         public class CreateWalletPaymentRequest

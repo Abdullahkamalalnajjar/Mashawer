@@ -1,6 +1,8 @@
 ﻿using Mashawer.Core.Features.Orders.Commands.Models;
 using Mashawer.Data.Entities.ClasssOfOrder;
 using Mashawer.Data.Enums;
+using Mashawer.Data.Dtos;
+using Mashawer.Service.Abstracts;
 
 namespace Mashawer.Core.Features.Orders.Commands.Handler
 {
@@ -9,9 +11,12 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
         INotificationService notificationService,
         IMapper mapper,
         IUnitOfWork unitOfWork,
-        UserManager<ApplicationUser> _userManager,
+        UserManager<ApplicationUser> userManager,
         IHttpContextAccessor httpContextAccessor,
-        IUserDailyDiscountService _userDailyDiscountService
+        IUserDailyDiscountService userDailyDiscountService,
+        IPaymobService paymobService,
+        IWalletService walletService,
+        ICurrentUserService currentUserService
     ) : ResponseHandler,
         IRequestHandler<CreateOrderCommand, Response<string>>,
         IRequestHandler<UpdateOrderStatusCommand, Response<string>>,
@@ -21,40 +26,22 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
         private readonly INotificationService _notificationService = notificationService;
         private readonly IMapper _mapper = mapper;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
-        private readonly UserManager<ApplicationUser> userManager = _userManager;
+        private readonly UserManager<ApplicationUser> _userManager = userManager;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
-        private readonly IUserDailyDiscountService userDailyDiscountService = _userDailyDiscountService;
+        private readonly IUserDailyDiscountService _userDailyDiscountService = userDailyDiscountService;
+        private readonly IPaymobService _paymobService = paymobService;
+        private readonly IWalletService _walletService = walletService;
+        private readonly ICurrentUserService _currentUserService = currentUserService;
 
-        /*   public async Task<Response<string>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
-           {
-               var generalSetting = await _unitOfWork.GeneralSettings
-                   .GetTableNoTracking()
-                   .FirstOrDefaultAsync(cancellationToken);
-               var order = _mapper.Map<Order>(request);
-               if (generalSetting != null && generalSetting.DiscountPercentage > 0)
-               {
-                   var discount = order.TotalDeliveryPrice * generalSetting.DiscountPercentage;
-                   order.DeducationDelivery = discount;
-               }
-
-               // ✅ تحديد حالة الدفع
-               if (order.PaymentMethod == PaymentMethod.Visa || order.PaymentMethod == PaymentMethod.LocalWallet)
-                   order.PaymentStatus = PaymentStatus.Pending;
-
-               // ✅ حفظ الطلب في قاعدة البيانات
-               var result = await _orderService.CreateOrderAsync(order, cancellationToken);
-
-               if (result == "Created")
-               {
-                   await _unitOfWork.CompeleteAsync();
-                   return Created("Order has been created successfully", new { orderId = order.Id });
-               }
-
-               return UnprocessableEntity<string>("An error occurred while creating the order");
-           }
-           */
         public async Task<Response<string>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
         {
+            var userId = _currentUserService.UserId;
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return NotFound<string>("User not found");
+            }
+
             // 1) جلب إعدادات التطبيق
             var generalSetting = await _unitOfWork.GeneralSettings
                 .GetTableNoTracking()
@@ -70,27 +57,52 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
                 appDiscount = order.TotalDeliveryPrice.GetValueOrDefault() * generalSetting.DiscountPercentage;
                 order.DeducationDelivery = appDiscount;
             }
-    /*
+
             // 4) تطبيق الخصم اليومي للعميل
             decimal dailyDiscount = 0;
             var userDiscount = await _userDailyDiscountService
-                .GetUserDiscountAsync(order.ClientId, DateTime.UtcNow.Date);
+                .GetUserDiscountAsync(order.ClientId);
 
             if (userDiscount != null)
             {
-                dailyDiscount = userDiscount.DiscountAmount;
+                dailyDiscount = userDiscount.Sum(d=>d.DiscountAmount);
                 order.DeducationDelivery = (order.DeducationDelivery ?? 0) + dailyDiscount;
 
                 // منع إعادة استخدام الخصم
-                await _userDailyDiscountService.MarkUsedAsync(userDiscount.Id);
+                await _userDailyDiscountService.MarkUsedAsync(userDiscount.Select(d=>d.Id).ToList());
             }
 
             // 5) حساب السعر النهائي بعد الخصومات
             order.FinalPrice = (order.TotalDeliveryPrice ?? 0) + (order.TotalPrice ?? 0) - (order.DeducationDelivery ?? 0);
-            */
+
+            if (request.PaymentMethod == PaymentMethod.Visa)
+            {
+                var billingData = new PaymobDto.PaymobBillingData
+                {
+                    FirstName = user.FullName,
+                    LastName = user.FullName,
+                    Email = user.Email,
+                    PhoneNumber = user.PhoneNumber
+                };
+                var paymentUrl = await _paymobService.InitCardPaymentAsync(new()
+                {
+                    AmountCents = (int)(order.FinalPrice * 100),
+                });
+                return Success(paymentUrl.IframeUrl);
+            }
+
+            if (request.PaymentMethod == PaymentMethod.AppWallet)
+            {
+                var wallet = await _walletService.GetWalletByUserIdAsync(user.Id);
+                if (wallet == null || wallet.Balance < order.FinalPrice)
+                {
+                    return BadRequest<string>("Insufficient wallet balance");
+                }
+            }
+
 
             // 6) تحديد حالة الدفع
-            if (order.PaymentMethod == PaymentMethod.Visa || order.PaymentMethod == PaymentMethod.LocalWallet)
+            if (order.PaymentMethod == PaymentMethod.Visa || order.PaymentMethod == PaymentMethod.AppWallet)
                 order.PaymentStatus = PaymentStatus.Pending;
 
             // 7) حفظ الأوردر في قاعدة البيانات
@@ -100,13 +112,13 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
             {
                 await _unitOfWork.CompeleteAsync();
 
-               
+
                 return Created("Order has been created successfully", new
                 {
                     orderId = order.Id,
                     totalDeliveryPrice = order.TotalDeliveryPrice,
                     deductionDelivery = order.DeducationDelivery,
-                    
+
                 });
             }
 
@@ -133,7 +145,7 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
                 if (string.IsNullOrWhiteSpace(request.DriverId))
                     return BadRequest<string>("DriverId is required for confirmation.");
 
-                var driver = await userManager.FindByIdAsync(request.DriverId);
+                var driver = await _userManager.FindByIdAsync(request.DriverId);
                 if (driver == null)
                     return BadRequest<string>("Driver not found.");
 

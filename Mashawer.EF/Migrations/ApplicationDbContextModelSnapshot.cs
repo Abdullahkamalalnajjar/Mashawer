@@ -322,6 +322,9 @@ namespace Mashawer.EF.Migrations
                     b.Property<string>("DriverId")
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<decimal?>("FinalPrice")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<bool>("IsClientLate")
                         .HasColumnType("bit");
 

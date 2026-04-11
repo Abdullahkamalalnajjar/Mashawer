@@ -31,6 +31,7 @@ namespace Mashawer.Data.Entities.ClasssOfOrder
         public decimal? DeducationDelivery { get; set; }
         public decimal? TotalDeliveryPrice { get; set; }
         public decimal? TotalPrice { get; set; }
+        public decimal? FinalPrice { get; set; }
         public string? AddressDriverAfterCancel { get; set; }
         public double? TotalDistanceKm { get; set; }
 

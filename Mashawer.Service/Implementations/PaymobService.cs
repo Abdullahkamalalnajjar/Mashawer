@@ -1,4 +1,5 @@
 ﻿using Mashawer.Data.Entities;
+using Mashawer.Service.Abstracts;
 using Microsoft.Extensions.Configuration;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -6,17 +7,19 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-public class PaymobService 
+public class PaymobService : IPaymobService
 {
     private readonly HttpClient _http;
     private readonly IConfiguration _config;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ICurrentUserService _currentUserService;
 
-    public PaymobService(HttpClient http, IConfiguration config, IUnitOfWork unitOfWork)
+    public PaymobService(HttpClient http, IConfiguration config, IUnitOfWork unitOfWork, ICurrentUserService currentUserService)
     {
         _http = http;
         _config = config;
         _unitOfWork = unitOfWork;
+        _currentUserService = currentUserService;
     }
 
     private string BaseUrl => _config["Paymob:ApiBaseUrl"]!.TrimEnd('/');
@@ -63,7 +66,7 @@ public class PaymobService
     // 3) PAYMENT KEY (generic)
     public async Task<string> CreatePaymentKeyAsync(
         string authToken, long orderId, int amountCents, string currency,
-        PaymobBillingData billing, string integrationId)
+        PaymobDto.PaymobBillingData billing, string integrationId)
     {
         var req = new
         {
@@ -101,37 +104,44 @@ public class PaymobService
     private record PaymentKeyResponse(string token);
 
     // 4A) CARD FLOW: إرجاع IFrame URL
-    public async Task<CardInitResponse> InitCardPaymentAsync(CreateCardPaymentRequest input, int walletId, CancellationToken cancellationToken = default)
+    public async Task<CardInitResponse> InitCardPaymentAsync(CreateCardPaymentRequest input)
     {
-        using var transaction = await _unitOfWork.BeginTransactionAsync();
-        try
+        var userId = _currentUserService.UserId;
+        var user = await _unitOfWork.Users.GetTableNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
+        var billing = new PaymobDto.PaymobBillingData
         {
-            var auth = await AuthenticateAsync();
-            var merchantOrderId = string.IsNullOrWhiteSpace(input.MerchantOrderId)
-                ? Guid.NewGuid().ToString("N")
-                : input.MerchantOrderId;
+            FirstName = user.FirstName ?? "User",
+            LastName = user.LastName ?? "Name",
+            Email = user.Email ?? "test@example.com",
+            PhoneNumber = user.PhoneNumber ?? "+201000000000"
+        };
 
-            var orderId = await CreateOrderAsync(auth, input.AmountCents, input.Currency, merchantOrderId);
-            var payToken = await CreatePaymentKeyAsync(auth, orderId, input.AmountCents, input.Currency, input.Billing, CardIntegrationId);
-            var iframeUrl = $"{BaseUrl}/acceptance/iframes/{IFrameId}?payment_token={payToken}";
-            var walletTransaction = new WalletTransaction
-            {
-                WalletId = walletId,
-                MerchantOrderId = merchantOrderId,
-                OrderId = orderId,
-                Amount = input.AmountCents,
-                CreatedAt = DateTime.UtcNow
-            };
-            await _unitOfWork.WalletTransactions.AddAsync(walletTransaction, cancellationToken);
-            await _unitOfWork.CompeleteAsync();
-            await transaction.CommitAsync(cancellationToken);
-            return new CardInitResponse { OrderId = orderId, PaymentToken = payToken, IframeUrl = iframeUrl };
-        }
-        catch
+        var wallet = await _unitOfWork.Wallets.GetTableAsTracking().FirstOrDefaultAsync(w => w.UserId == userId);
+        if (wallet == null)
         {
-            await transaction.RollbackAsync(cancellationToken);
-            throw;
+            throw new InvalidOperationException($"Wallet not found for user {userId}. The controller must create a wallet before initiating a payment.");
         }
+
+        var auth = await AuthenticateAsync();
+        var merchantOrderId = Guid.NewGuid().ToString("N");
+
+        var orderId = await CreateOrderAsync(auth, input.AmountCents, "EGP", merchantOrderId);
+        var payToken = await CreatePaymentKeyAsync(auth, orderId, input.AmountCents, "EGP", billing, CardIntegrationId);
+        var iframeUrl = $"{BaseUrl}/acceptance/iframes/{IFrameId}?payment_token={payToken}";
+        var walletTransaction = new WalletTransaction
+        {
+            WalletId = wallet.Id,
+            MerchantOrderId = merchantOrderId,
+            OrderId = orderId,
+            Amount = input.AmountCents / 100m,
+            CreatedAt = DateTime.UtcNow,
+            Status = "Pending",
+            Type = "Deposit"
+        };
+        await _unitOfWork.WalletTransactions.AddAsync(walletTransaction);
+        await _unitOfWork.CompeleteAsync();
+        
+        return new CardInitResponse { OrderId = orderId, PaymentToken = payToken, IframeUrl = iframeUrl };
     }
 
     // 4B) WALLET FLOW: إرجاع Redirect URL

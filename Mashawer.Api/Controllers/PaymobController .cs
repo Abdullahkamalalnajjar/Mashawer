@@ -35,8 +35,8 @@ namespace Mashawer.Api.Controllers
 
         // ✅ 1) إنشاء دفع بالكارت (Visa/Mastercard) — يرجّع IFrame URL
         [Authorize]
-        [HttpPost("card")]
-        public async Task<IActionResult> CreateCard([FromBody] CreateCardPaymentRequest req)
+        [HttpPost("card/{amountCents}")]
+        public async Task<IActionResult> CreateCardFromRoute([FromRoute] int amountCents)
         {
             var userId = _currentUserService.UserId;
             if (userId == null) return Unauthorized("User not authenticated");
@@ -58,15 +58,12 @@ namespace Mashawer.Api.Controllers
                 wallet = await _unitOfWork.Wallets.GetTableNoTracking().FirstOrDefaultAsync(w => w.UserId == userId);
             }
 
-            req.Billing = new PaymobBillingData
+            var req = new CreateCardPaymentRequest
             {
-                FirstName = user.FirstName ?? "User",
-                LastName = user.LastName ?? "Name",
-                Email = user.Email ?? "test@example.com",
-                PhoneNumber = user.PhoneNumber ?? "+201000000000"
+                AmountCents = amountCents,
             };
 
-            var result = await _paymob.InitCardPaymentAsync(req, wallet.Id);
+            var result = await _paymob.InitCardPaymentAsync(req);
             return Ok(result);
         }
 
@@ -281,30 +278,26 @@ namespace Mashawer.Api.Controllers
                             }
                             else
                             {
-                                // إنشاء محفظة جديدة بالمندوب مع رصيد سالب (اختياري)
+                                // 1. Create and save the new wallet
                                 var newWallet = new Mashawer.Data.Entities.Wallet
                                 {
                                     UserId = order.DriverId,
                                     Balance = -commission
                                 };
                                 await _unitOfWork.Wallets.AddAsync(newWallet);
-                                await _unitOfWork.CompeleteAsync();
+                                await _unitOfWork.CompeleteAsync(); // Save wallet to get its ID
 
-                                var created = await _unitOfWork.Wallets.GetTableAsTracking()
-                                    .FirstOrDefaultAsync(w => w.UserId == order.DriverId);
-                                if (created != null)
+                                // 2. Create the transaction with the new WalletId
+                                var driverTx = new WalletTransaction
                                 {
-                                    var driverTx = new WalletTransaction
-                                    {
-                                        WalletId = created.Id,
-                                        Amount = commission,
-                                        Type = "Withdraw",
-                                        Status = "Paid",
-                                        PaidAt = DateTime.UtcNow,
-                                        OrderId = appOrderId
-                                    };
-                                    await _unitOfWork.WalletTransactions.AddAsync(driverTx);
-                                }
+                                    WalletId = newWallet.Id, // Use the ID from the saved wallet
+                                    Amount = commission,
+                                    Type = "Withdraw",
+                                    Status = "Paid",
+                                    PaidAt = DateTime.UtcNow,
+                                    OrderId = appOrderId
+                                };
+                                await _unitOfWork.WalletTransactions.AddAsync(driverTx);
                             }
                         }
 
