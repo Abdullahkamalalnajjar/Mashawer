@@ -14,6 +14,7 @@
         string? AgentAddress,
         string? RepresentativeAddress,
         DateTime RefreshTokenExpiresIn,
-        string? FCMToken
+        string? FCMToken,
+         bool IsProfileCompleted   // السطر الجديد
  );
 }

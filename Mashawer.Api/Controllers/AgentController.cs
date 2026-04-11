@@ -1,6 +1,7 @@
 ﻿using Mashawer.Api.Base;
 using Mashawer.Core.Features.Agents.Query.Model;
 using Mashawer.Data.AppMetaData;
+using Mashawer.Data.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Mashawer.Api.Controllers
@@ -9,9 +10,9 @@ namespace Mashawer.Api.Controllers
     public class AgentController : AppBaseController
     {
         [HttpGet(Router.AgentRouting.GetOrdersByAgentAddress)]
-        public async Task<IActionResult> GetOrdersByAgentAddressAsync(string userId, DateTime? dateTime)
+        public async Task<IActionResult> GetOrdersByAgentAddressAsync(string userId, OrderStatus orderStatus, DateTime? dateTime)
         {
-            var query = new GetOrderByAgentAddressQuery(userId, dateTime);
+            var query = new GetOrderByAgentAddressQuery(userId, orderStatus, dateTime);
             var result = await Mediator.Send(query);
             return NewResult(result);
         }

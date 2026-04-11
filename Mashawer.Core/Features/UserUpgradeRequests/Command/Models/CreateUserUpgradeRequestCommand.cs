@@ -11,7 +11,6 @@ namespace Mashawer.Core.Features.UserUpgradeRequests.Command.Models
         public string? Note { get; set; }
         public string? Address { get; set; }
         public string? TargetAgentId { get; set; }
-        public double? RepresentativeLatitude { get; set; } // خط العرض لموقع الممثل
-        public double? RepresentativeLongitude { get; set; } // خط الطول لموقع الممثل
+
     }
 }

@@ -28,6 +28,8 @@ namespace Mashawer.Service
             services.AddTransient<IRepresentitiveCancelOrderService, RepresentitiveCancelOrderService>();
             services.AddTransient<IAgentService, AgentService>();
             services.AddTransient<IRatingService, RatingService>();
+            services.AddTransient<IUserDailyDiscountService, UserDailyDiscountService>();
+            services.AddTransient<IWalletService, WalletService>();
             services.AddHttpClient<PaymobService>(client =>
             {
                 client.Timeout = TimeSpan.FromSeconds(60);
@@ -41,3 +43,4 @@ namespace Mashawer.Service
         }
     }
 }
+

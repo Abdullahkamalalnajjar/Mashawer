@@ -15,14 +15,19 @@ namespace Mashawer.Core.Features.Users.Queries.Handlers
 
         public async Task<Response<UserProfileResponse>> Handle(UserProfileQuery request, CancellationToken cancellationToken)
         {
+
             var user = await _userService.GetUserProfileAsync(request.UserId);
+            if (user is null)
+            {
+                return NotFound<UserProfileResponse>("User not found");
+            }
             var response = _mapper.Map<UserProfileResponse>(user);
             return Success(response);
         }
 
         public async Task<Response<IEnumerable<UserResponse>>> Handle(GetAllUserQuery request, CancellationToken cancellationToken)
         {
-            var response = await _userService.GetAllUsers();
+            var response = await _userService.GetAllUsers(request.Address);
             return Success(response);
         }
 
@@ -45,7 +50,7 @@ namespace Mashawer.Core.Features.Users.Queries.Handlers
 
         public async Task<Response<IEnumerable<UserResponse>>> Handle(GetAllRepresentativeQuery request, CancellationToken cancellationToken)
         {
-            var response = await _userService.GetAllRepresentativeAsync();
+            var response = await _userService.GetAllRepresentativeAsync(request.Address);
             return Success(response);
         }
     }

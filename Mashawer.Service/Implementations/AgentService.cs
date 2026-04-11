@@ -8,7 +8,7 @@ namespace Mashawer.Service.Implementations
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
-        public async Task<List<OrderDto>> GetOrdersByAgentAddressAsync(string userId, DateTime? dateTime)
+        public async Task<List<OrderDto>> GetOrdersByAgentAddressAsync(string userId, OrderStatus orderStatus, DateTime? dateTime)
         {
             // Get agent address
             var agentAddress = await _unitOfWork.Users
@@ -22,17 +22,40 @@ namespace Mashawer.Service.Implementations
 
             var targetDate = (dateTime ?? DateTime.Now).Date;
 
-            // Base query
+
+
             var query = _unitOfWork.Orders
                 .GetTableNoTracking()
                 .Include(x => x.Driver)
-                .Where(x => x.Driver.Address == agentAddress &&
-                            x.CreatedAt.Date == targetDate);
+                .Where(x => x.Status == orderStatus && x.CreatedAt.Date == targetDate);
+            // check if addressDriverAfterCancel has value and orderStatus is Cancelled and addressDriverAfterCancel has value
 
-            // Return result
-            return await query
-                .Select(OrderToDto)
-                .ToListAsync();
+            if (orderStatus == OrderStatus.Pending)
+            {
+                query = query.Where(o => o.AddressDriverAfterCancel == agentAddress);
+
+                // Return result
+                return await query
+                    .Select(OrderToDto)
+                    .ToListAsync();
+            }
+            else if (orderStatus == OrderStatus.Confirmed || orderStatus == OrderStatus.Completed)
+            {
+                query = query.Where(o => o.Driver != null && o.Driver.RepresentativeAddress == agentAddress);
+                // Return result
+                return await query
+                    .Select(OrderToDto)
+                    .ToListAsync();
+            }
+
+            else
+            {
+                query = query.Where(o => o.Status == OrderStatus.Cancelled);
+                // Return result
+                return await query
+                    .Select(OrderToDto)
+                    .ToListAsync();
+            }
         }
 
         #region Expression: Convert Order to OrderDto
@@ -50,7 +73,7 @@ namespace Mashawer.Service.Implementations
             // 🚗 تفاصيل المركبة
             VehicleTypeOfDriver = o.Driver != null ? o.Driver.VehicleType : null,
             VehicleNumber = o.Driver != null ? o.Driver.VehicleNumber : null,
-
+            VehiclePhotoUrl = o.Driver != null ? o.Driver.VehiclePictureUrl : null,
             // 👤 المستخدمين
             ClientId = o.ClientId,
             ClientName = o.Client.FullName,
@@ -88,6 +111,8 @@ namespace Mashawer.Service.Implementations
                 DeliveryLocation = t.DeliveryLocation,
                 //DeliveryPrice = t.DeliveryPrice,
                 //DistanceKm = (double)t.DistanceKm,
+                GoogleMapAddressFrom = t.GoogleMapAddressFrom,
+                GoogleMapAddressTo = t.GoogleMapAddressTo,
                 DeliveryDescription = t.DeliveryDescription,
                 IsClientPaidForItems = t.IsClientPaidForItems,
                 IsDriverReimbursed = t.IsDriverReimbursed,

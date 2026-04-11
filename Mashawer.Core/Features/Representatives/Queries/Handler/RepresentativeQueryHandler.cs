@@ -5,7 +5,8 @@ namespace Mashawer.Core.Features.Representatives.Queries.Handler
     public class RepresentativeQueryHandler(IRepresentativeService representativeService) : ResponseHandler,
         IRequestHandler<GetAllRepresentativeByAddress, Response<IEnumerable<RepresentativeDTO>>>,
         IRequestHandler<GetNearestRepresentativeQuery, Response<IEnumerable<NearestRepresentativeDto>>>,
-        IRequestHandler<GetRepresentitiveByIdQuery, Response<RepresentativeInfoDto>>
+        IRequestHandler<GetRepresentitiveByIdQuery, Response<RepresentativeInfoDto>>,
+        IRequestHandler<GetRepresentativeByIsActiveStatusAndAddressQuery, Response<IEnumerable<RepresentativeDTO>>>
     {
         private readonly IRepresentativeService _representativeService = representativeService;
         public async Task<Response<IEnumerable<RepresentativeDTO>>> Handle(GetAllRepresentativeByAddress request, CancellationToken cancellationToken)
@@ -16,7 +17,7 @@ namespace Mashawer.Core.Features.Representatives.Queries.Handler
 
         public async Task<Response<IEnumerable<NearestRepresentativeDto>>> Handle(GetNearestRepresentativeQuery request, CancellationToken cancellationToken)
         {
-            var nearestRepresentatives = await _representativeService.GetNearestRepresentativeAsync(request.FromLatitude, request.FromLongitude, request.ToLatitude, request.ToLongitude);
+            var nearestRepresentatives = await _representativeService.GetNearestRepresentatives(request.FromLatitude, request.FromLongitude, request.ToLatitude, request.ToLongitude);
             if (nearestRepresentatives == null || !nearestRepresentatives.Any())
             {
                 return NotFound<IEnumerable<NearestRepresentativeDto>>("No nearest representatives found.");
@@ -32,6 +33,12 @@ namespace Mashawer.Core.Features.Representatives.Queries.Handler
                 return NotFound<RepresentativeInfoDto>("Representative not found.");
             }
             return Success(result, "Representative info retrieved successfully.");
+        }
+
+        public async Task<Response<IEnumerable<RepresentativeDTO>>> Handle(GetRepresentativeByIsActiveStatusAndAddressQuery request, CancellationToken cancellationToken)
+        {
+            var representatives = await _representativeService.GetAllActiveRepresentativesByAddressAsync(request.Address, request.IsActive);
+            return Success(representatives, "Representatives retrieved successfully.");
         }
     }
 }

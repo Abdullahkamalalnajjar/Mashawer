@@ -5,8 +5,10 @@
         public void Configure(EntityTypeBuilder<Wallet> builder)
         {
             builder.Property(p => p.Balance).HasColumnType("decimal(18,2)");
+            builder.Property(p => p.IsDisable).HasDefaultValue(false);
         }
     }
 
 
 }
+

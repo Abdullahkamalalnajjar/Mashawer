@@ -18,16 +18,20 @@
                     PhoneNumber = x.PhoneNumber,
                     ProfilePictureUrl = x.ProfilePictureUrl,
                     Address = x.RepresentativeAddress,
-                    RepresentativeLatitude = x.RepresentativeLatitude,
-                    RepresentativeLongitude = x.RepresentativeLongitude
+                    IsActive = x.IsActive,
+                    RepresentativeFormLatitude = x.RepresentativeFromLatitude,
+                    RepresentativeToLatitude = x.RepresentativeToLatitude,
+                    RepresentativeFromLongitude = x.RepresentativeFromLongitude,
+                    RepresentativeToLongitude = x.RepresentativeToLongitude
+
                 }).ToListAsync();
         }
-
-        public async Task<IEnumerable<NearestRepresentativeDto>> GetNearestRepresentativeAsync(double fromLatitude, double fromLongitude, double toLatitude, double toLongitude)
+        //get all representitvee isActive if true or false by address
+        public async Task<IEnumerable<RepresentativeDTO>> GetAllActiveRepresentativesByAddressAsync(string address, bool isActive)
         {
-            var representatives = await _unitOfWork.Users.GetTableNoTracking()
-                .Where(x => x.UserType == UserType.Representative)
-                .Select(x => new NearestRepresentativeDto
+            return await _unitOfWork.Users.GetTableNoTracking()
+                .Where(x => x.UserType == UserType.Representative && x.RepresentativeAddress == address && x.IsActive == isActive)
+                .Select(x => new RepresentativeDTO
                 {
                     Id = x.Id,
                     FullName = x.FullName,
@@ -35,21 +39,53 @@
                     PhoneNumber = x.PhoneNumber,
                     ProfilePictureUrl = x.ProfilePictureUrl,
                     Address = x.RepresentativeAddress,
-                    RepresentativeLatitude = x.RepresentativeLatitude,
-                    RepresentativeLongitude = x.RepresentativeLongitude
-                }).ToListAsync();
+                    IsActive = x.IsActive,
+                    RepresentativeFormLatitude = x.RepresentativeFromLatitude,
+                    RepresentativeToLatitude = x.RepresentativeToLatitude,
+                    RepresentativeFromLongitude = x.RepresentativeFromLongitude,
+                    RepresentativeToLongitude = x.RepresentativeToLongitude
 
-            var deliveryPrice = CalculateDeliveryPrice(fromLatitude, fromLongitude, toLatitude, toLongitude);
+                }).ToListAsync();
+        }
+
+        public async Task<IEnumerable<NearestRepresentativeDto>> GetNearestRepresentatives(double fromLatitude, double fromLongitude, double toLatitude, double toLongitude)
+        {
+            var representatives = await _unitOfWork.Users.GetTableNoTracking()
+                .Where(r => r.IsActive)
+                .Select(r => new NearestRepresentativeDto
+                {
+                    Id = r.Id,
+                    FullName = r.FullName,
+                    PhoneNumber = r.PhoneNumber,
+                    Email = r.Email,
+                    Address = r.Address,
+                    IsActive = r.IsActive,
+                    RepresentativeFormLatitude = r.RepresentativeFromLatitude,
+                    RepresentativeToLatitude = r.RepresentativeToLatitude,
+                    RepresentativeToLongitude = r.RepresentativeFromLongitude,
+                    RepresentativeFromLongitude = r.RepresentativeFromLongitude,
+
+                })
+                .ToListAsync();
+
             var nearest = representatives
                 .Select(rep =>
                 {
-                    double distance = CalculateDistance(fromLatitude, fromLongitude, (double)rep.RepresentativeLatitude, (double)rep.RepresentativeLongitude);
-                    rep.DistanceInKm = Math.Round(distance, 2); // تعيين المسافة داخل DTO
-                    rep.DeleveryPrice = deliveryPrice; // تعيين سعر التوصيل داخل DTO
+                    if (!rep.RepresentativeFormLatitude.HasValue || !rep.RepresentativeFromLongitude.HasValue)
+                        return null;
+
+                    double distance = CalculateDistance(fromLatitude, fromLongitude,
+                                                        rep.RepresentativeFormLatitude.Value,
+                                                        rep.RepresentativeFromLongitude.Value);
+
+                    rep.DistanceInKm = Math.Round(distance, 2);
+                    rep.DeleveryPrice = 50; // مثال، أو حسب الحساب
                     return rep;
                 })
-                .Where(rep => rep.DistanceInKm <= 20).OrderBy(rep => rep.DistanceInKm)
+                .Where(rep => rep != null && rep.DistanceInKm <= 20)
+                .OrderBy(rep => rep.DistanceInKm)
                 .Take(10);
+
             return nearest;
         }
 
@@ -66,10 +102,11 @@
             double c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
             return R * c;
         }
-        private double DegreesToRadians(double deg)
-        {
-            return deg * (Math.PI / 180);
-        }
+
+        private double DegreesToRadians(double degrees) => degrees * (Math.PI / 180);
+
+
+
         private double CalculateDeliveryPrice(double fromLatitude, double fromLongitude, double toLatitude, double toLongitude)
         {
             double distance = CalculateDistance(fromLatitude, fromLongitude, toLatitude, toLongitude);
@@ -77,13 +114,15 @@
             double deliveryPrice = Math.Round(distance * pricePerKm, 2);
             return deliveryPrice;
         }
-        public async Task<string> UpdateLocation(string userId, double latitude, double longitude)
+        public async Task<string> UpdateLocation(string userId, double Tolatitude, double fromLatitude, double Tolongitude, double fromLongitude)
         {
             var user = await _unitOfWork.Users.GetTableAsTracking().FirstOrDefaultAsync(x => x.Id == userId);
             if (user == null) return "NotFound";
 
-            user.RepresentativeLatitude = latitude;
-            user.RepresentativeLongitude = longitude;
+            user.RepresentativeFromLatitude = fromLatitude;
+            user.RepresentativeToLatitude = Tolatitude;
+            user.RepresentativeFromLongitude = fromLongitude;
+            user.RepresentativeToLongitude = Tolongitude;
 
             _unitOfWork.Users.Update(user);
             await _unitOfWork.CompeleteAsync();
@@ -103,7 +142,7 @@
             await _unitOfWork.CompeleteAsync();
             return "Updated";
         }
-        public async Task<string> MarkDriverArrivedAsync(int orderId)
+        public async Task<string> MarkDriverArrivedAsync(int orderId) //عندالاستلام المندوب لقد وصل
         {
             var order = await _unitOfWork.Orders.GetTableAsTracking()
                 .FirstOrDefaultAsync(o => o.Id == orderId);
@@ -118,8 +157,8 @@
                 await _notificationService.SendNotificationAsync(
                     order.ClientId,
                     client.FCMToken,
-                    "المندوب قد وصل",
-                    "المندوب وصل إلى موقعك الآن، الرجاء الاستعداد للاستلام.",
+                    " المندوب قد وصل إلي موقع الاستلام",
+                    "-",
                     cancellationToken: CancellationToken.None
                 );
             }
@@ -148,6 +187,7 @@
                     PhoneNumber = x.PhoneNumber,
                     ProfilePictureUrl = x.ProfilePictureUrl,
                     Address = x.RepresentativeAddress,
+                    IsActive = x.IsActive,
                     VehicleNumber = x.VehicleNumber,
                     VehicleType = x.VehicleType,
                     VehicleUrl = x.VehiclePictureUrl,

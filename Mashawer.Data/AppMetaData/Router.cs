@@ -33,6 +33,8 @@
             public const string DriverArrived = Prefix + "DriverArrived/{orderId}";
             public const string MarkDriverArrived = Prefix + "MarkDriverArrived/{orderId}";
             public const string AddDeliveredTimeToOrderTask = Prefix + "AddDeliveredTimeToOrderTask/{orderTaskId}";
+            public const string UpdateRepresentitveIsActiveStatus = Prefix + "UpdateRepresentitveIsActiveStatus";
+            public const string GetByIsActiveStatusAndAddress = Prefix + "GetByIsActiveStatusAndAddress";
 
 
         }
@@ -68,6 +70,27 @@
             public const string GetNearbyPendingOrders = Prefix + "GetNearbyPendingOrders";
             public const string UploadOrderPhotos = "Api/V1/Order/UploadPhotos";
         }
+
+        public static class UserDailyDiscountRouting
+        {
+            private const string Prefix = Rule + "/" + "UserDailyDiscount/";
+            public const string List = Prefix + ListRoute;
+            public const string GetById = Prefix + SingleRoute;
+            public const string Create = Prefix + "Create";
+            public const string AddForAllNormalUsers = Prefix + "AddForAllNormalUsers";
+            public const string Edit = Prefix + "Edit";
+            public const string UpdateStatus = Prefix + "UpdateStatus";
+            public const string MarkAsUsed = Prefix + "MarkAsUsed/";
+            public const string Delete = Prefix + "Delete/{id}";
+            public const string Paginated = Prefix + "Paginated";
+            public const string GetByUserIdAndDate = Prefix + "GetByUserId/{userId}";
+            public const string GetOrdersByClientId = Prefix + "GetOrdersByClientId";
+            public const string GetOrdersByDriverId = Prefix + "GetOrdersByDriverId";
+            public const string GetOrdersForUser = Prefix + "GetOrdersForUser";
+            public const string GetNearbyPendingOrders = Prefix + "GetNearbyPendingOrders";
+            public const string UploadOrderPhotos = "Api/V1/Order/UploadPhotos";
+        }
+
         public static class PaymentRouting
         {
             private const string Prefix = Rule + "/" + "Payment/";
@@ -135,6 +158,7 @@
             public const string ResetPassword = Prefix + "reset-password";
             public const string ConfirmEmail = Prefix + "ConfirmEmail";
             public const string ResendConfirmEmail = Prefix + "ResendConfirmEmail";
+            public const string CompleteProfile = Prefix + "CompleteProfile";
         }
         public static class AuthorizationRouting
         {

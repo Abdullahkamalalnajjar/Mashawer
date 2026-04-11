@@ -17,6 +17,7 @@
         public IClientCancelOrderRepository ClientCancelOrders { get; private set; }
         public IRepresentitiveCancelOrderRepository RepresentitiveCancelOrders { get; private set; }
         public IRatingRepository Ratings { get; private set; } // Added Rating repository
+        public IUserDailyDiscountRepository UserDailyDiscounts { get; private set; } // Added UserDailyDiscount repository
 
         public UnitOfWork(ApplicationDbContext context)
         {
@@ -35,6 +36,7 @@
             ClientCancelOrders = new ClientCancelOrderRepository(_context);
             RepresentitiveCancelOrders = new RepresentitiveCancelOrderRepository(_context);
             Ratings = new RatingRepository(_context); // Initialize Rating repository
+            UserDailyDiscounts = new UserDailyDiscountRepository(_context); 
         }
         public async Task<int> CompeleteAsync()
         {

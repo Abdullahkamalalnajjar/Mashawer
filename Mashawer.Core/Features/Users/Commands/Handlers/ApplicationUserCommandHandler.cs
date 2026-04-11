@@ -5,7 +5,8 @@
         IRequestHandler<CreateUserCommand, Response<string>>,
         IRequestHandler<UpdateUserCommand, Response<string>>,
         IRequestHandler<DeleteUserWithReasonCommand, Response<string>>,
-        IRequestHandler<DeleteUserCommand, Response<string>>
+        IRequestHandler<DeleteUserCommand, Response<string>>,
+        IRequestHandler<UnDisableUserCommand, Response<string>>
 
     {
         private readonly IUserService _userService = userService;
@@ -71,29 +72,56 @@
 
         public async Task<Response<string>> Handle(DeleteUserWithReasonCommand request, CancellationToken cancellationToken)
         {
+            // 1️⃣ المستخدم الحالي
             var userId = _currentUserService.UserId;
-            var user = await _unitOfWork.Users.FindAsync(x => x.Id.Equals(userId));
-            if (user is null)
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
                 return NotFound<string>("User not found");
+
+            // Disable the user account with reason instead of deleting it
             var result = await _userService.DeleteUserWithReasone(user, request.Reason, cancellationToken);
+            await _unitOfWork.CompeleteAsync();
+
             if (result == "Deleted")
-            {
-                await _unitOfWork.CompeleteAsync();
-                return Deleted<string>("Application user has been deleted successfully");
-            }
-            return BadRequest<string>("Delete user failed, please try again");
+                return Deleted<string>("Your account has been disabled successfully");
+
+            return BadRequest<string>("Failed to disable account, please try again");
         }
 
         public async Task<Response<string>> Handle(DeleteUserCommand request, CancellationToken cancellationToken)
         {
             var user = await _userManager.FindByIdAsync(request.UserId);
+            if (user == null)
+                return NotFound<string>("User not found");
+
+            // Disable the user account instead of deleting it
             var result = await _userService.DeleteUserAsync(user);
+
             if (result == "Deleted")
-                return Deleted<string>("Deleted Succssfully");
-            return BadRequest<string>("Exist error in delete");
+                return Deleted<string>("Account disabled successfully");
+
+            return BadRequest<string>("Error while disabling account");
+        }
+
+        public async Task<Response<string>> Handle(UnDisableUserCommand request, CancellationToken cancellationToken)
+        {
+            var user = await _userManager.FindByIdAsync(request.UserId);
+            if (user == null)
+                return NotFound<string>("User not found");
+
+            // Enable the user account
+            user.IsDisable = false;
+            var result = await _userManager.UpdateAsync(user);
+
+            if (result.Succeeded)
+                return Success<string>("Account enabled successfully");
+
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            return BadRequest<string>($"Error while enabling account: {errors}");
         }
 
         #endregion
 
     }
 }
+

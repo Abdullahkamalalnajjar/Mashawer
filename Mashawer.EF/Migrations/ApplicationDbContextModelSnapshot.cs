@@ -106,7 +106,13 @@ namespace Mashawer.EF.Migrations
                     b.Property<string>("FirstName")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsDisable")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsProfileCompleted")
                         .HasColumnType("bit");
 
                     b.Property<string>("LastName")
@@ -141,10 +147,16 @@ namespace Mashawer.EF.Migrations
                     b.Property<string>("RepresentativeAddress")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<double?>("RepresentativeLatitude")
+                    b.Property<double?>("RepresentativeFromLatitude")
                         .HasColumnType("float");
 
-                    b.Property<double?>("RepresentativeLongitude")
+                    b.Property<double?>("RepresentativeFromLongitude")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("RepresentativeToLatitude")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("RepresentativeToLongitude")
                         .HasColumnType("float");
 
                     b.Property<string>("SecurityStamp")
@@ -194,7 +206,9 @@ namespace Mashawer.EF.Migrations
                             Email = "admin@mashawer.com",
                             EmailConfirmed = true,
                             FirstName = "Mashawer",
+                            IsActive = false,
                             IsDisable = false,
+                            IsProfileCompleted = false,
                             LastName = "Admin",
                             LockoutEnabled = false,
                             NormalizedEmail = "ADMIN@MASHAWER.COM",
@@ -286,6 +300,9 @@ namespace Mashawer.EF.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AddressDriverAfterCancel")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("CancelReason")
                         .HasColumnType("nvarchar(max)");
@@ -606,6 +623,37 @@ namespace Mashawer.EF.Migrations
                     b.ToTable("RefreshTokens");
                 });
 
+            modelBuilder.Entity("Mashawer.Data.Entities.UserDailyDiscount", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("DiscountDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserDailyDiscounts");
+                });
+
             modelBuilder.Entity("Mashawer.Data.Entities.UserNotification", b =>
                 {
                     b.Property<int>("Id")
@@ -690,6 +738,11 @@ namespace Mashawer.EF.Migrations
 
                     b.Property<decimal>("Balance")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsDisable")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -1203,6 +1256,17 @@ namespace Mashawer.EF.Migrations
                         .IsRequired();
 
                     b.Navigation("ApplicationUser");
+                });
+
+            modelBuilder.Entity("Mashawer.Data.Entities.UserDailyDiscount", b =>
+                {
+                    b.HasOne("Mashawer.Data.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Mashawer.Data.Entities.UserNotification", b =>

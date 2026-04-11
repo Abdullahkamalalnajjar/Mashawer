@@ -16,9 +16,9 @@ namespace Mashawer.Api.Controllers
         }
         //   [HasPermission(Permissions.GetUsers)]
         [HttpGet("AllUser")]
-        public async Task<IActionResult> AllUsers()
+        public async Task<IActionResult> AllUsers(string? address)
         {
-            var request = new GetAllUserQuery();
+            var request = new GetAllUserQuery(address);
             var response = await Mediator.Send(request);
             return NewResult(response);
         }
@@ -30,9 +30,9 @@ namespace Mashawer.Api.Controllers
             return NewResult(response);
         }
         [HttpGet("AllRepresentative")]
-        public async Task<IActionResult> AllRepresentatives()
+        public async Task<IActionResult> AllRepresentatives(string? address)
         {
-            var request = new GetAllRepresentativeQuery();
+            var request = new GetAllRepresentativeQuery(address);
             var response = await Mediator.Send(request);
             return NewResult(response);
         }

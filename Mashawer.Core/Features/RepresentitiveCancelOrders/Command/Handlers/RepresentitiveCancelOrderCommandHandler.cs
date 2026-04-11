@@ -31,6 +31,8 @@ namespace Mashawer.Core.Features.RepresentitiveCancelOrders.Command.Handlers
 
             // ❌ مش Pending … لازم تكون CancelledByDriver
             order.Status = OrderStatus.Pending;
+            if (order.Driver != null)
+                order.AddressDriverAfterCancel = order.Driver.RepresentativeAddress;
             // تحديث Tasks
             foreach (var orderTask in order.Tasks)
             {

@@ -3,20 +3,22 @@ using Mashawer.Data.Enums;
 
 namespace Mashawer.Core.Features.Representatives.Command.Handler
 {
-    public class RepresentativeCommandHandler(IRepresentativeService representativeService, IUnitOfWork unitOfWork) : ResponseHandler,
+    public class RepresentativeCommandHandler(IRepresentativeService representativeService, INotificationService notificationService, IUnitOfWork unitOfWork) : ResponseHandler,
         IRequestHandler<UpdateRepresentativesLocationCommand, Response<string>>,
         IRequestHandler<UpdateRepresentativeInfoCommand, Response<string>>,
         IRequestHandler<MarkIsClientLateCommand, Response<string>>,
         IRequestHandler<MarkOrderTaskIsCompleteCommand, Response<string>>,
-        IRequestHandler<TaskDeliveredAtCommand, Response<string>>
+        IRequestHandler<TaskDeliveredAtCommand, Response<string>>,
+        IRequestHandler<UpdateIsActiveCommand, Response<string>>
 
     {
         private readonly IRepresentativeService _representativeService = representativeService;
+        private readonly INotificationService _notificationService = notificationService;
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
         public async Task<Response<string>> Handle(UpdateRepresentativesLocationCommand request, CancellationToken cancellationToken)
         {
-            var result = await _representativeService.UpdateLocation(request.UserId, request.RepresentativeLatitude, request.RepresentativeLongitude);
+            var result = await _representativeService.UpdateLocation(request.UserId, request.RepresentativeToLatitude, request.RepresentativeFromLatitude, request.RepresentativeFromLongitude, request.RepresentativeToLongitude);
             if (result == "NotFound")
                 return NotFound<string>("NotFound");
             return Success<string>(result);
@@ -38,9 +40,10 @@ namespace Mashawer.Core.Features.Representatives.Command.Handler
             return Updated<string>(res);
         }
 
-        public async Task<Response<string>> Handle(MarkOrderTaskIsCompleteCommand request, CancellationToken cancellationToken)
+        public async Task<Response<string>> Handle(
+          MarkOrderTaskIsCompleteCommand request,
+          CancellationToken cancellationToken)
         {
-
             var order = await _unitOfWork.Orders
                 .GetTableAsTracking()
                 .Include(x => x.Tasks)
@@ -56,19 +59,40 @@ namespace Mashawer.Core.Features.Representatives.Command.Handler
             if (targetTask == null)
                 return NotFound<string>("Task not found in this order.");
 
+            // Mark task as completed
             targetTask.Status = OrderStatus.Completed;
+
+            // ✅ Check if all tasks are completed
+            if (order.Tasks.All(t => t.Status == OrderStatus.Completed))
+            {
+                order.Status = OrderStatus.Completed;
+            }
 
             _unitOfWork.Orders.Update(order);
             await _unitOfWork.CompeleteAsync();
 
-            return Success<string>("Order task marked as completed.");
+            if (!string.IsNullOrEmpty(order.Client?.FCMToken))
+            {
+                await _notificationService.SendNotificationAsync(
+                    order.ClientId,
+                    order.Client.FCMToken,
+                    "المندوب وصل لموقع التسلّم",
+                    "لقد وصل المندوب إلى موقع التسلّم وتمّت عملية الاستلام بنجاح.",
+                    cancellationToken: CancellationToken.None
+                );
+            }
 
+            return Success<string>("Order task marked as completed.");
         }
+
+
 
         public async Task<Response<string>> Handle(TaskDeliveredAtCommand request, CancellationToken cancellationToken)
         {
             var orderTask = await _unitOfWork.OrderTasks
             .GetTableAsTracking()
+            .Include(x => x.Order)
+            .ThenInclude(o => o.Client)
             .FirstOrDefaultAsync(x => x.Id == request.TaskId);
 
             if (orderTask == null)
@@ -78,6 +102,19 @@ namespace Mashawer.Core.Features.Representatives.Command.Handler
             _unitOfWork.OrderTasks.Update(orderTask);
             await _unitOfWork.CompeleteAsync();
             return Success<string>("Order task Arrived");
+        }
+
+        public async Task<Response<string>> Handle(UpdateIsActiveCommand request, CancellationToken cancellationToken)
+        {
+            var representitive = await _unitOfWork.Users
+                 .GetTableAsTracking()
+                 .FirstOrDefaultAsync(x => x.Id == request.UserId);
+            if (representitive == null)
+                return NotFound<string>("Representative not found.");
+            representitive.IsActive = request.IsActive;
+            _unitOfWork.Users.Update(representitive);
+            await _unitOfWork.CompeleteAsync();
+            return Success<string>("Representative status updated.");
         }
     }
 

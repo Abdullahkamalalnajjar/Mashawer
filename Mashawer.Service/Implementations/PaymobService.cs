@@ -144,7 +144,7 @@ public class PaymobService
             source = new { identifier = input.WalletMsisdn, subtype = "WALLET" },
             payment_token = payToken
         };
-        var res = await _http.PostAsJsonAsync($"{BaseUrl}/acceptance/payments/pay", payBody);
+        var res = await _http.PostAsJsonAsync($"{BaseUrl}/a cceptance/payments/pay", payBody);
         res.EnsureSuccessStatusCode();
         var json = await res.Content.ReadFromJsonAsync<WalletPayResponse>();
 

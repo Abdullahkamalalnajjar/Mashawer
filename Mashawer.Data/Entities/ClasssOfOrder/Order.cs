@@ -27,12 +27,11 @@ namespace Mashawer.Data.Entities.ClasssOfOrder
         public string? CancelReason { get; set; }
         public string? OtherCancelReasonDetails { get; set; }
         public bool IsClientLate { get; set; } = false;
-
         // 💰 الحسابات
         public decimal? DeducationDelivery { get; set; }
         public decimal? TotalDeliveryPrice { get; set; }
         public decimal? TotalPrice { get; set; }
-
+        public string? AddressDriverAfterCancel { get; set; }
         public double? TotalDistanceKm { get; set; }
 
         // 🕓 بيانات التوقيت

@@ -2,5 +2,6 @@
 {
     public class GetAllAgentQuery : IRequest<Response<IEnumerable<UserResponse>>>
     {
+
     }
 }

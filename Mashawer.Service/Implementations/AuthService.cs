@@ -58,7 +58,8 @@ namespace Mashawer.Service.Implementations
                 AgentAddress: user.AgentAddress,
                 RepresentativeAddress: user.RepresentativeAddress,
                 RefreshTokenExpiresIn: refreshTokenExpiresIn,
-                FCMToken: user.FCMToken
+                FCMToken: user.FCMToken,
+                 IsProfileCompleted: user.IsProfileCompleted
             );
 
             return AuthResult.Success(response);
@@ -107,7 +108,8 @@ namespace Mashawer.Service.Implementations
                 TokenExpiresIn: expiresIn,
                 RefreshToken: newRefreshToken,
                 RefreshTokenExpiresIn: newRefreshTokenExpiresIn,
-                FCMToken: user.FCMToken
+                FCMToken: user.FCMToken,
+                 IsProfileCompleted: user.IsProfileCompleted
                 );
             return response;
 

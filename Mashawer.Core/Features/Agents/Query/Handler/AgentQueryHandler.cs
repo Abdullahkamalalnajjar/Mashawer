@@ -9,7 +9,7 @@ namespace Mashawer.Core.Features.Agents.Query.Handler
 
         public async Task<Response<List<OrderDto>>> Handle(GetOrderByAgentAddressQuery request, CancellationToken cancellationToken)
         {
-            var result = await _agentService.GetOrdersByAgentAddressAsync(request.UserId, request.DateTime);
+            var result = await _agentService.GetOrdersByAgentAddressAsync(request.UserId, request.OrderStatus, request.DateTime);
             return Success(result);
         }
     }

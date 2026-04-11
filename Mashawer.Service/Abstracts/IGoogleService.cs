@@ -5,7 +5,7 @@ namespace Mashawer.Service.Abstracts
     public interface IGoogleService
     {
         public Task<GoogleJsonWebSignature.Payload?> VerifyGoogleToken(string idToken);
-        public Task<AuthResult> GoogleLogin(string idToken, CancellationToken cancellationToken);
+        public Task<AuthResult> GoogleLogin(string idToken, string FcmToken, CancellationToken cancellationToken);
 
     }
 }

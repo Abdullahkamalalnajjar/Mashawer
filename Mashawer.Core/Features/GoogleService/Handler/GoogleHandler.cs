@@ -9,7 +9,7 @@ namespace Mashawer.Core.Features.GoogleService.Handler
 
         public async Task<Response<AuthResponse>> Handle(GoogleSignInCommand request, CancellationToken cancellationToken)
         {
-            var result =await _googleService.GoogleLogin(request.IdToken, cancellationToken);
+            var result = await _googleService.GoogleLogin(request.IdToken, request.FCMtoken, cancellationToken);
 
             if (!string.IsNullOrEmpty(result.ErrorMessage))
             {

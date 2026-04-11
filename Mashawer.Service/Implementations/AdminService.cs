@@ -40,7 +40,7 @@ namespace Mashawer.Service.Implementations
             // If an address is provided, filter orders by the driver's address
             if (!string.IsNullOrEmpty(address))
             {
-                ordersQuery = ordersQuery.Where(o => o.Driver != null && o.Driver.Address == address);
+                ordersQuery = ordersQuery.Where(o => o.Driver != null && o.Driver.RepresentativeAddress == address);
             }
             var result = await ordersQuery.Select(OrderToDto).Where(c => c.CreatedAt.Date == targetDate).ToListAsync();
             return result;
@@ -70,7 +70,7 @@ namespace Mashawer.Service.Implementations
             DriverName = o.Driver != null ? o.Driver.FullName : null,
             DriverPhoneNumber = o.Driver != null ? o.Driver.PhoneNumber : null,
             DriverPhotoUrl = o.Driver != null ? o.Driver.ProfilePictureUrl : null,
-
+            VehiclePhotoUrl = o.Driver != null ? o.Driver.VehiclePictureUrl : null,
             // ⚙️ الحالة
             Status = o.Status.ToString(),
             CancelReason = o.CancelReason,
@@ -94,6 +94,8 @@ namespace Mashawer.Service.Implementations
                 FromLongitude = t.FromLongitude,
                 ToLatitude = t.ToLatitude,
                 ToLongitude = t.ToLongitude,
+                GoogleMapAddressFrom = t.GoogleMapAddressFrom,
+                GoogleMapAddressTo = t.GoogleMapAddressTo,
                 PickupLocation = t.PickupLocation,
                 DeliveryLocation = t.DeliveryLocation,
                 //DeliveryPrice = t.DeliveryPrice,

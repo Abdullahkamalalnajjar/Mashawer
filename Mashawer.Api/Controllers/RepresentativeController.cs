@@ -26,7 +26,7 @@ namespace Mashawer.Api.Controllers
             return NewResult(result);
         }
 
-        [HttpGet(Router.RepresentativeRouting.UpdateRepresentativeLivelocation)]
+        [HttpPut(Router.RepresentativeRouting.UpdateRepresentativeLivelocation)]
         public async Task<IActionResult> UpdateRepresentativelocation([FromBody] UpdateRepresentativesLocationCommand command)
         {
 
@@ -39,7 +39,7 @@ namespace Mashawer.Api.Controllers
             var result = await Mediator.Send(command);
             return NewResult(result);
         }
-        [HttpPost(Router.RepresentativeRouting.DriverArrived)]
+        [HttpPost(Router.RepresentativeRouting.DriverArrived)] //عند الاستلام 
         public async Task<IActionResult> DriverArrived([FromRoute] int orderId)
         {
             var result = await _representativeService.MarkDriverArrivedAsync(orderId);
@@ -68,6 +68,19 @@ namespace Mashawer.Api.Controllers
         public async Task<IActionResult> GetById([FromRoute] string id)
         {
             var result = await Mediator.Send(new GetRepresentitiveByIdQuery(id));
+            return NewResult(result);
+        }
+        [HttpPut(Router.RepresentativeRouting.UpdateRepresentitveIsActiveStatus)]
+        public async Task<IActionResult> UpdateRepresentitveIsActiveStatus([FromBody] UpdateIsActiveCommand command)
+        {
+            var result = await Mediator.Send(command);
+            return NewResult(result);
+        }
+        [HttpGet(Router.RepresentativeRouting.GetByIsActiveStatusAndAddress)]
+        public async Task<IActionResult> GetByIsActiveStatusAndAddress(string address, bool isActive)
+        {
+            var query = new GetRepresentativeByIsActiveStatusAndAddressQuery(address, isActive);
+            var result = await Mediator.Send(query);
             return NewResult(result);
         }
     }

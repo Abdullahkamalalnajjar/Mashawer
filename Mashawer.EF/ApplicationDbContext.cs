@@ -32,6 +32,7 @@ namespace Mashawer.EF
         public DbSet<ClientCancelOrder> ClientCancelOrders { get; set; }
         public DbSet<RepresentitiveCancelOrder> RepresentitiveCancel { get; set; }
         public DbSet<Rating> Ratings { get; set; }
+        public DbSet<UserDailyDiscount> UserDailyDiscounts { get; set; }
         }
 
 }

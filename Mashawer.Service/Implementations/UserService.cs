@@ -22,7 +22,7 @@ namespace Mashawer.Service.Implementations
             if (result.Succeeded)
             {
                 await _userManager.AddToRolesAsync(user, roles);
-   
+
                 return "Created";
             }
             if (result.Errors.Any())
@@ -39,30 +39,42 @@ namespace Mashawer.Service.Implementations
             return "Updated";
 
         }
-        public async Task<IEnumerable<UserResponse>> GetAllUsers()
+        public async Task<IEnumerable<UserResponse>> GetAllUsers(string? address)
         {
-            var users = await (
+            var query =
                 from u in _context.Users
+                join w in _context.Wallets on u.Id equals w.UserId into wallets
+                from w in wallets.DefaultIfEmpty()
                 join ur in _context.UserRoles on u.Id equals ur.UserId into userRoles
                 from ur in userRoles.DefaultIfEmpty()
                 join r in _context.Roles on ur.RoleId equals r.Id into roles
                 from r in roles.DefaultIfEmpty()
-                group r by new
-                {
-                    u.Id,
-                    u.PhoneNumber,
-                    u.ProfilePictureUrl,
-                    u.Email,
-                    u.FirstName,
-                    u.LastName,
-                    u.UserType,
-                    u.AgentAddress,
-                    u.RepresentativeAddress,
-                    u.RepresentativeLongitude,
-                    u.RepresentativeLatitude
+                select new { u, w, r };
 
-                } into g
-                select new UserResponse(
+            // ✅ فلترة على Address فقط
+            if (!string.IsNullOrWhiteSpace(address))
+            {
+                query = query.Where(x =>
+                    x.u.Address != null &&
+                    x.u.Address.Contains(address)
+                );
+            }
+
+            var users = await query
+                .GroupBy(x => new
+                {
+                    x.u.Id,
+                    x.u.PhoneNumber,
+                    x.u.ProfilePictureUrl,
+                    x.u.Email,
+                    x.u.FirstName,
+                    x.u.LastName,
+                    x.u.UserType,
+                    x.u.Address,
+                    WalletId = (int?)x.w.Id,
+                    WalletBalance = (decimal?)x.w.Balance
+                })
+                .Select(g => new UserResponse(
                     g.Key.Id,
                     g.Key.PhoneNumber,
                     g.Key.ProfilePictureUrl,
@@ -70,16 +82,24 @@ namespace Mashawer.Service.Implementations
                     g.Key.FirstName,
                     g.Key.LastName,
                     g.Key.UserType.ToString(),
-                    g.Key.AgentAddress,
-                    g.Key.RepresentativeAddress,
-                    g.Key.RepresentativeLatitude,
-                    g.Key.RepresentativeLongitude,
-                    g.Where(role => role != null).Select(role => role.Name).Distinct()
-                )
-            ).ToListAsync();
+                    g.Key.Address,        // ✅ العنوان الأساسي
+                    null,                 // AgentAddress
+                    null,                 // RepresentativeAddress
+                    null,
+                    null,
+                    null,
+                    null,
+                    g.Key.WalletId,
+                    g.Key.WalletBalance,
+                    g.Where(x => x.r != null)
+                     .Select(x => x.r!.Name)
+                     .Distinct()
+                ))
+                .ToListAsync();
 
             return users;
         }
+
 
 
 
@@ -87,6 +107,8 @@ namespace Mashawer.Service.Implementations
         {
             var user = await (
                 from u in _context.Users
+                join w in _context.Wallets on u.Id equals w.UserId into wallets
+                from w in wallets.DefaultIfEmpty()
                 join ur in _context.UserRoles on u.Id equals ur.UserId into userRoles
                 from ur in userRoles.DefaultIfEmpty()
                 join r in _context.Roles on ur.RoleId equals r.Id into roles
@@ -101,10 +123,15 @@ namespace Mashawer.Service.Implementations
                     u.FirstName,
                     u.LastName,
                     u.UserType,
+                    u.Address,                     // ✅ أضفناها
                     u.AgentAddress,
                     u.RepresentativeAddress,
-                    u.RepresentativeLongitude,
-                    u.RepresentativeLatitude
+                    u.RepresentativeFromLongitude,
+                    u.RepresentativeToLongitude,
+                    u.RepresentativeFromLatitude,
+                    u.RepresentativeToLatitude,
+                    WalletId = (int?)w.Id,
+                    WalletBalance = (decimal?)w.Balance
                 } into g
                 select new UserResponse(
                     g.Key.Id,
@@ -114,11 +141,19 @@ namespace Mashawer.Service.Implementations
                     g.Key.FirstName,
                     g.Key.LastName,
                     g.Key.UserType.ToString(),
+                    g.Key.Address,                 // ✅ شغالة
                     g.Key.AgentAddress,
                     g.Key.RepresentativeAddress,
-                    g.Key.RepresentativeLatitude,
-                    g.Key.RepresentativeLongitude,
-                    g.Where(r => r != null).Select(r => r.Name).Distinct().ToList()
+                    g.Key.RepresentativeFromLongitude,
+                    g.Key.RepresentativeToLongitude,
+                    g.Key.RepresentativeFromLatitude,
+                    g.Key.RepresentativeToLatitude,
+                    g.Key.WalletId,
+                    g.Key.WalletBalance,
+                    g.Where(r => r != null)
+                     .Select(r => r!.Name)
+                     .Distinct()
+                     .ToList()
                 )
             ).SingleOrDefaultAsync();
 
@@ -127,7 +162,7 @@ namespace Mashawer.Service.Implementations
 
         public async Task<ApplicationUser> GetUserProfileAsync(string userId)
             => await _unitOfWork.Users.GetTableNoTracking()
-            .Where(x => x.Id.Equals(userId)).SingleAsync();
+            .Where(x => x.Id.Equals(userId)).FirstOrDefaultAsync();
         public async Task<string> UpdateProfileUser(ApplicationUser user)
         {
             await _userManager.UpdateAsync(user);
@@ -136,8 +171,8 @@ namespace Mashawer.Service.Implementations
 
         public async Task<string> DeleteUserWithReasone(ApplicationUser applicationUser, string reason, CancellationToken cancellationToken)
         {
-
-            await _unitOfWork.Users.Delete(applicationUser);
+            applicationUser.IsDisable = true;
+            await _userManager.UpdateAsync(applicationUser);
             var deletedRecord = new DeletedRecord
             {
                 Email = applicationUser.Email,
@@ -154,6 +189,8 @@ namespace Mashawer.Service.Implementations
             var users = await (
                  from u in _context.Users
                  where u.UserType == UserType.Agent // ✅ تصفية المستخدمين حسب النوع
+                 join w in _context.Wallets on u.Id equals w.UserId into wallets
+                 from w in wallets.DefaultIfEmpty()
                  join ur in _context.UserRoles on u.Id equals ur.UserId into userRoles
                  from ur in userRoles.DefaultIfEmpty()
                  join r in _context.Roles on ur.RoleId equals r.Id into roles
@@ -167,10 +204,16 @@ namespace Mashawer.Service.Implementations
                      u.FirstName,
                      u.LastName,
                      u.UserType,
+                     u.Address,
                      u.AgentAddress,// ✅ إضافة العنوان الخاص بالوكيل,
+
                      u.RepresentativeAddress,
-                     u.RepresentativeLongitude,
-                     u.RepresentativeLatitude
+                     u.RepresentativeFromLongitude,
+                     u.RepresentativeToLongitude,
+                     u.RepresentativeFromLatitude,
+                     u.RepresentativeToLatitude,
+                     WalletId = (int?)w.Id,
+                     WalletBalance = (decimal?)w.Balance
                  } into g
                  select new UserResponse(
                      g.Key.Id,
@@ -180,10 +223,15 @@ namespace Mashawer.Service.Implementations
                      g.Key.FirstName,
                      g.Key.LastName,
                      g.Key.UserType.ToString(), // ✅ تحويل enum إلى string
+                        g.Key.Address,
                      g.Key.AgentAddress,
                      g.Key.RepresentativeAddress, // إضافة العنوان الخاص بالمندوب
-                     g.Key.RepresentativeLongitude,
-                     g.Key.RepresentativeLatitude,
+                     g.Key.RepresentativeFromLongitude,
+                     g.Key.RepresentativeToLongitude,
+                     g.Key.RepresentativeFromLatitude,
+                     g.Key.RepresentativeToLatitude,
+                     g.Key.WalletId,
+                     g.Key.WalletBalance,
                      g.Where(role => role != null).Select(role => role.Name).Distinct()
                  )
              ).ToListAsync();
@@ -192,51 +240,75 @@ namespace Mashawer.Service.Implementations
 
         }
 
-        public async Task<IEnumerable<UserResponse>> GetAllRepresentativeAsync()
+        public async Task<IEnumerable<UserResponse>> GetAllRepresentativeAsync(string? address)
         {
+            var query =
+                from u in _context.Users
+                where u.UserType == UserType.Representative
+                join w in _context.Wallets on u.Id equals w.UserId into wallets
+                from w in wallets.DefaultIfEmpty()
+                join ur in _context.UserRoles on u.Id equals ur.UserId into userRoles
+                from ur in userRoles.DefaultIfEmpty()
+                join r in _context.Roles on ur.RoleId equals r.Id into roles
+                from r in roles.DefaultIfEmpty()
+                select new { u, w, r };
+
+            // ✅ إضافة الفلترة حسب العنوان لو مش فاضي
+            if (!string.IsNullOrEmpty(address))
+            {
+                query = query.Where(x =>
+                    (x.u.Address != null && x.u.Address.Contains(address)));
+            }
+
             var users = await (
-         from u in _context.Users
-         where u.UserType == UserType.Representative // ✅ تصفية المستخدمين حسب النوع
-         join ur in _context.UserRoles on u.Id equals ur.UserId into userRoles
-         from ur in userRoles.DefaultIfEmpty()
-         join r in _context.Roles on ur.RoleId equals r.Id into roles
-         from r in roles.DefaultIfEmpty()
-         group r by new
-         {
-             u.Id,
-             u.PhoneNumber,
-             u.ProfilePictureUrl,
-             u.Email,
-             u.FirstName,
-             u.LastName,
-             u.UserType,
-             u.AgentAddress,
-             u.RepresentativeAddress,
-             u.RepresentativeLongitude,
-             u.RepresentativeLatitude
-         } into g
-         select new UserResponse(
-             g.Key.Id,
-             g.Key.PhoneNumber,
-             g.Key.ProfilePictureUrl,
-             g.Key.Email,
-             g.Key.FirstName,
-             g.Key.LastName,
-             g.Key.UserType.ToString(), // ✅ تحويل enum إلى string
-             g.Key.AgentAddress, // إضافة العنوان الخاص بالوكيل
-             g.Key.RepresentativeAddress, // إضافة العنوان الخاص بالمندوب
-             g.Key.RepresentativeLongitude,
-             g.Key.RepresentativeLatitude,
-             g.Where(role => role != null).Select(role => role.Name).Distinct()
-         )
-     ).ToListAsync();
+                from x in query
+                group x.r by new
+                {
+                    x.u.Id,
+                    x.u.PhoneNumber,
+                    x.u.ProfilePictureUrl,
+                    x.u.Email,
+                    x.u.FirstName,
+                    x.u.LastName,
+                    x.u.UserType,
+                    x.u.Address,
+                    x.u.AgentAddress,
+                    x.u.RepresentativeAddress,
+                    x.u.RepresentativeFromLongitude,
+                    x.u.RepresentativeToLongitude,
+                    x.u.RepresentativeFromLatitude,
+                    x.u.RepresentativeToLatitude,
+                    WalletId = (int?)x.w.Id,
+                    WalletBalance = (decimal?)x.w.Balance
+                } into g
+                select new UserResponse(
+                    g.Key.Id,
+                    g.Key.PhoneNumber,
+                    g.Key.ProfilePictureUrl,
+                    g.Key.Email,
+                    g.Key.FirstName,
+                    g.Key.LastName,
+                    g.Key.UserType.ToString(),
+                    g.Key.Address,
+                    g.Key.AgentAddress,
+                    g.Key.RepresentativeAddress,
+                    g.Key.RepresentativeFromLongitude,
+                    g.Key.RepresentativeToLongitude,
+                    g.Key.RepresentativeFromLatitude,
+                    g.Key.RepresentativeToLatitude,
+                    g.Key.WalletId,
+                    g.Key.WalletBalance,
+                    g.Where(role => role != null).Select(role => role.Name).Distinct()
+                )
+            ).ToListAsync();
 
             return users;
         }
 
         public async Task<string> DeleteUserAsync(ApplicationUser applicationUser)
         {
-            await _userManager.DeleteAsync(applicationUser);
+            applicationUser.IsDisable = true;
+            await _userManager.UpdateAsync(applicationUser);
             return "Deleted";
         }
     }

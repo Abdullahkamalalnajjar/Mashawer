@@ -48,7 +48,6 @@
         public string? DriverName { get; set; }
         public string? DriverPhoneNumber { get; set; }
         public string? DriverPhotoUrl { get; set; }
-
         // 📏 المسافة
         public double? DistanceKm { get; set; }
 

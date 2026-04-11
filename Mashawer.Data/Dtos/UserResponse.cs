@@ -2,15 +2,22 @@
 {
     public record UserResponse
     (string Id,
-        string PhoneNumber, 
+        string PhoneNumber,
         string UserImage,
         string Email,
         string FirstName,
         string LastName,
         string UserType,
+        string Address,
         string AgentAddress,
         string RepresentativeAddress,
-        double? RepresentativeLatitude,
-        double? RepresentativeLongitude,
-        IEnumerable<string> Roles);
+        double? RepresentativeFromLatitude,
+        double? RepresentativeToLatitude,
+        double? RepresentativeFromLongitude,
+        double? RepresentativeToLongitude,
+        int? WalletId,
+        decimal? Balance,
+        IEnumerable<string> Roles
+        );
 }
+

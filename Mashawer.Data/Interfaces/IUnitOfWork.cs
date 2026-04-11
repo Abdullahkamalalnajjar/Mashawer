@@ -17,6 +17,7 @@
         IClientCancelOrderRepository ClientCancelOrders { get; }
         IRepresentitiveCancelOrderRepository RepresentitiveCancelOrders { get; }
         IRatingRepository Ratings { get; } // Added Rating repository
+        IUserDailyDiscountRepository UserDailyDiscounts { get; } // Added UserDailyDiscount repository
         Task<int> CompeleteAsync();
         Task<IDbContextTransaction> BeginTransactionAsync();
 

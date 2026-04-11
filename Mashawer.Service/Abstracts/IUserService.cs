@@ -3,9 +3,9 @@
     public interface IUserService
     {
         public Task<ApplicationUser> GetUserProfileAsync(string userId);
-        public Task<IEnumerable<UserResponse>> GetAllUsers();
+        public Task<IEnumerable<UserResponse>> GetAllUsers(string? address);
         public Task<IEnumerable<UserResponse>> GetAllAgnetAsync();
-        public Task<IEnumerable<UserResponse>> GetAllRepresentativeAsync();
+        public Task<IEnumerable<UserResponse>> GetAllRepresentativeAsync(string? address);
         public Task<UserResponse> GetUserById(string id);
         public Task<string> UpdateProfileUser(ApplicationUser user);
         public Task<string> DeleteUserWithReasone(ApplicationUser applicationUser, string reason, CancellationToken cancellationToken);

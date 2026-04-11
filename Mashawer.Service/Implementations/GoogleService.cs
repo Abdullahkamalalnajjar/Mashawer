@@ -8,7 +8,7 @@ namespace Mashawer.Service.Implementations
         private readonly ApplicationDbContext _context = context;
         private readonly IJwtProvider _jwtProvider = jwtProvider;
         private readonly IAuthService _authService = authService;
-        public async Task<AuthResult> GoogleLogin(string idToken, CancellationToken cancellationToken)
+        public async Task<AuthResult> GoogleLogin(string idToken, string FCMtoken, CancellationToken cancellationToken)
         {
             var payload = await VerifyGoogleToken(idToken);
             if (payload == null)
@@ -24,6 +24,7 @@ namespace Mashawer.Service.Implementations
                     UserName = payload.Email,
                     FirstName = payload.GivenName ?? "",
                     LastName = payload.FamilyName ?? "",
+                    FCMToken = FCMtoken,
                     ProfilePictureUrl = payload.Picture,
                     //    PhoneNumber = payload.PhoneNumber,
                     EmailConfirmed = true
@@ -45,6 +46,14 @@ namespace Mashawer.Service.Implementations
             if (user.IsDisable)
                 return AuthResult.Fail("Your account has been disabled.");
 
+
+            bool isProfileCompleted =
+            !string.IsNullOrEmpty(user.PhoneNumber) &&
+            !string.IsNullOrEmpty(user.Address);
+            user.IsProfileCompleted = isProfileCompleted;
+            await _userManager.UpdateAsync(user);
+
+
             var (roles, permissions) = await GetUserRolesAndPermissions(user, cancellationToken);
             var (token, expiresIn) = _jwtProvider.GenerateToken(user, roles, permissions);
             var refreshToken = GeneratedRefreshToken();
@@ -55,6 +64,7 @@ namespace Mashawer.Service.Implementations
                 Token = refreshToken,
                 ExpiresOn = refreshTokenExpiresIn,
             });
+            user.FCMToken = FCMtoken;
 
             await _userManager.UpdateAsync(user);
 
@@ -71,7 +81,8 @@ namespace Mashawer.Service.Implementations
                 TokenExpiresIn: expiresIn,
                 RefreshToken: refreshToken,
                 RefreshTokenExpiresIn: refreshTokenExpiresIn,
-                FCMToken: user.FCMToken
+                FCMToken: user.FCMToken,
+                IsProfileCompleted: user.IsProfileCompleted
             );
 
             return AuthResult.Success(response);

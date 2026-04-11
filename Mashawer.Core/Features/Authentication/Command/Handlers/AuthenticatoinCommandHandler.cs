@@ -11,7 +11,9 @@ namespace Mashawer.Core.Features.Authentication.Command.Handlers
         IRequestHandler<ResendConfirmEmailCommand, Response<string>>,
         IRequestHandler<AddProfileImageCommand, Response<string>>,
         IRequestHandler<ResetPasswordCommand, Response<string>>,
-        IRequestHandler<ChangePasswordCommand, Response<string>>
+        IRequestHandler<ChangePasswordCommand, Response<string>>,
+        IRequestHandler<CompleteProfileCommand,Response<object>>
+
 
 
     {
@@ -47,6 +49,11 @@ namespace Mashawer.Core.Features.Authentication.Command.Handlers
             var user = await _userManager.FindByEmailAsync(request.Email);
             if (user is null)
                 return NotFound<AuthResponse>("User not found");
+            
+            // Check if account is disabled
+            if (user.IsDisable)
+                return BadRequest<AuthResponse>("This account has been disabled. Please contact support.");
+            
             user.FCMToken = request.FCMToken;
             await _userManager.UpdateAsync(user);
 
@@ -84,13 +91,14 @@ namespace Mashawer.Core.Features.Authentication.Command.Handlers
                 var otp = await _otpService.GenerateOtpAsync(newUser.Email);
                 await _otpService.SendOtpAsync(newUser.Email, otp);
                 // Create a wallet for the user with an initial balance of 0
-                var wallet = new Wallet
+                var wallet = new Data.Entities.Wallet
                 {
                     UserId = newUser.Id,
                     Balance = 0
                 };
                 await _unitOfWork.Wallets.AddAsync(wallet, cancellationToken);
                 await _unitOfWork.CompeleteAsync();
+
                 // Commit the transaction
                 await transaction.CommitAsync();
 
@@ -268,9 +276,36 @@ namespace Mashawer.Core.Features.Authentication.Command.Handlers
             var errorMessage = string.Join(", ", result.Errors.Select(e => e.Description));
             return UnprocessableEntity<string>(errorMessage);
         }
+        public async Task<Response<object>> Handle(CompleteProfileCommand request, CancellationToken cancellationToken)
+        {
+            var user = await _userManager.FindByIdAsync(request.UserId);
+
+            if (user == null)
+                return NotFound<object>("User not found");
+
+            if (string.IsNullOrWhiteSpace(request.PhoneNumber) || string.IsNullOrWhiteSpace(request.Address))
+                return BadRequest<object>("Phone number and address are required");
+
+            user.PhoneNumber = request.PhoneNumber;
+            user.Address = request.Address;
+            user.IsProfileCompleted = true;
+
+            var result = await _userManager.UpdateAsync(user);
+
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                return BadRequest<object>($"Failed to update profile: {errors}");
+            }
+
+            return Success<object>(new { message = "Profile completed successfully" });
+        }
 
     }
+
+
 }
+
 
 
 

@@ -25,13 +25,12 @@ namespace Mashawer.Core.Features.UserUpgradeRequests.Command.Handler
                          .FirstOrDefaultAsync(x => x.Id == request.UserId, cancellationToken);
                     if (user != null)
                     {
-                        user.RepresentativeLatitude = request.RepresentativeLatitude;
-                        user.RepresentativeLongitude = request.RepresentativeLongitude;
                         _unitOfWork.Users.Update(user);
-                        await _unitOfWork.CompeleteAsync();
 
                     }
                 }
+                await _unitOfWork.CompeleteAsync();
+
                 return Success<string>("User upgrade request created successfully.", result);
             }
             return BadRequest<string>("Failed to create user upgrade request.");

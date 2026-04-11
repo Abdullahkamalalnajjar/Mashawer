@@ -1,5 +1,4 @@
 ﻿using Mashawer.Api.Base;
-using Mashawer.Data.Entities;
 using Mashawer.Data.Interfaces;
 using Mashawer.Service.Abstracts;
 using Microsoft.AspNetCore.Authorization;
@@ -10,6 +9,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using static Mashawer.Data.Dtos.PaymobDto;
+using Mashawer.Data.Entities;
 
 namespace Mashawer.Api.Controllers
 {
@@ -143,7 +143,7 @@ namespace Mashawer.Api.Controllers
         [HttpGet("last-transaction/{orderId}")]
         public async Task<IActionResult> GetLastTransaction(int orderId)
         {
-            string apiKey = "ZXlKaGJHY2lPaUpJVXpVeE1pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SmpiR0Z6Y3lJNklrMWxjbU5vWVc1MElpd2ljSEp2Wm1sc1pWOXdheUk2TVRBMk5UQXdNeXdpYm1GdFpTSTZJbWx1YVhScFlXd2lmUS5UQjBteVNBSlRsWFlmc3BCTEYzTUlCTHZVTWVoV3BjVGIxSE8ycE1MbTJjYVVXX0pDckxzWllpX1M5OENFQUZZcFJWS3dzVkRZSnBGb3h6SGJQSFRfQQ=="; // API Key بتاعك
+            string apiKey = "ZXlKaGJHY2lPaUpJVXpVeE1pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SmpiR0Z6Y3lJNklrMWxjbU5vWVc1MElpd2ljSEp2Wm1sc1pWOXdheUk2TVRFd056VXdNaXdpYm1GdFpTSTZJbWx1YVhScFlXd2lmUS5xWlpOMDZlVUtTRGdTdTAtOTBrZ3Z5TUlSUXBZMDZBWHBBeHcyVjlVZGdyb0hYaG9kVG5tY0dUS3BaUHhubEhEOVdDSXJodUxaUExyMDJwUzFQSW9TZw=="; // API Key بتاعك
 
             // 1. Get Auth Token
             var authResponse = await _http.PostAsJsonAsync("https://accept.paymob.com/api/auth/tokens", new
@@ -227,7 +227,7 @@ namespace Mashawer.Api.Controllers
                 var merchantOrderId = payload.Obj.Order.MerchantOrderId;
                 var amount = payload.Obj.AmountCents / 100m;
 
-                // ✅ حدّث حالة الدفع
+                // 1) إذا كان هناك WalletTransaction مرتبط بالـ merchantOrderId حدّثه وزوّد رصيد المحفظة
                 var walletTransaction = await _unitOfWork.WalletTransactions.GetTableAsTracking()
                     .FirstOrDefaultAsync(p => p.MerchantOrderId == merchantOrderId);
 
@@ -236,22 +236,92 @@ namespace Mashawer.Api.Controllers
                     walletTransaction.Status = "Paid";
                     walletTransaction.PaidAt = DateTime.UtcNow;
 
-                    // ✅ هات المحفظة المرتبطة بالـ Transaction
                     var wallet = await _unitOfWork.Wallets.GetTableAsTracking()
                         .FirstOrDefaultAsync(w => w.Id == walletTransaction.WalletId);
 
-                    if (wallet == null)
+                    if (wallet != null)
                     {
-                        // في حالة مفيش Wallet (مش منطقي غالباً لأن WalletId موجود في الـ Transaction)
-                        return BadRequest("Wallet not found.");
+                        wallet.Balance += amount;
                     }
 
-                    // ✅ زوّد رصيد المحفظة
-                    wallet.Balance += amount;
-
-                
-
                     await _unitOfWork.CompeleteAsync();
+                }
+
+                // 2) إذا كان merchantOrderId يمثل رقم الطلب في التطبيق (app order id)
+                if (int.TryParse(merchantOrderId, out var appOrderId))
+                {
+                    var order = await _unitOfWork.Orders.GetTableAsTracking()
+                        .FirstOrDefaultAsync(o => o.Id == appOrderId);
+
+                    if (order != null)
+                    {
+                        var orderPrice = order.TotalPrice ?? 0m;
+
+                        // تأكد من أن المبلغ المدفوع يطابق سعر الطلب
+                        if (amount != orderPrice)
+                        {
+                            // إذا لم يتطابق المبلغ، نُخطر ونوقف المتابعة (يمكن تغيير السلوك حسب الحاجة)
+                            return BadRequest("Paid amount does not match order total price.");
+                        }
+
+                        // ضع حالة الدفع واحتفظ بمعرّف الـ transaction
+                        order.PaymentStatus = Mashawer.Data.Enums.PaymentStatus.Paid;
+                        order.PaymobTransactionId = payload.Obj.Order.Id.ToString();
+
+                        // إذا كان للطلب مندوب، اخصم 25% من رصيد المندوب
+                        if (!string.IsNullOrEmpty(order.DriverId))
+                        {
+                            var commission = orderPrice * 0.25m;
+
+                            var driverWallet = await _unitOfWork.Wallets.GetTableAsTracking()
+                                .FirstOrDefaultAsync(w => w.UserId == order.DriverId);
+
+                            if (driverWallet != null)
+                            {
+                                driverWallet.Balance -= commission;
+
+                                var driverTx = new WalletTransaction
+                                {
+                                    WalletId = driverWallet.Id,
+                                    Amount = commission,
+                                    Type = "Withdraw",
+                                    Status = "Paid",
+                                    PaidAt = DateTime.UtcNow,
+                                    OrderId = appOrderId
+                                };
+                                await _unitOfWork.WalletTransactions.AddAsync(driverTx);
+                            }
+                            else
+                            {
+                                // إنشاء محفظة جديدة بالمندوب مع رصيد سالب (اختياري)
+                                var newWallet = new Mashawer.Data.Entities.Wallet
+                                {
+                                    UserId = order.DriverId,
+                                    Balance = -commission
+                                };
+                                await _unitOfWork.Wallets.AddAsync(newWallet);
+                                await _unitOfWork.CompeleteAsync();
+
+                                var created = await _unitOfWork.Wallets.GetTableAsTracking()
+                                    .FirstOrDefaultAsync(w => w.UserId == order.DriverId);
+                                if (created != null)
+                                {
+                                    var driverTx = new WalletTransaction
+                                    {
+                                        WalletId = created.Id,
+                                        Amount = commission,
+                                        Type = "Withdraw",
+                                        Status = "Paid",
+                                        PaidAt = DateTime.UtcNow,
+                                        OrderId = appOrderId
+                                    };
+                                    await _unitOfWork.WalletTransactions.AddAsync(driverTx);
+                                }
+                            }
+                        }
+
+                        await _unitOfWork.CompeleteAsync();
+                    }
                 }
             }
 

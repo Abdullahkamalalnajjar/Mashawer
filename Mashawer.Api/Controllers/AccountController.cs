@@ -2,6 +2,7 @@
 using Mashawer.Core.Features.Authentication.Command.Models;
 using Mashawer.Core.Features.Users.Commands.Models;
 using Mashawer.Core.Features.Users.Queries.Models;
+using Mashawer.Data.AppMetaData;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -45,6 +46,14 @@ namespace Mashawer.Api.Controllers
         }
 
         [AllowAnonymous]
+        [HttpPut("enable-account")]
+        public async Task<IActionResult> EnableAccount(UnDisableUserCommand command)
+        {
+            var response = await Mediator.Send(command);
+            return NewResult(response);
+        }
+
+        [AllowAnonymous]
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword(ResetPasswordCommand command)
         {
@@ -53,6 +62,12 @@ namespace Mashawer.Api.Controllers
         }
         [HttpPut("change-password")]
         public async Task<IActionResult> ChangePasswordAsync([FromBody] ChangePasswordCommand command)
+        {
+            var response = await Mediator.Send(command);
+            return NewResult(response);
+        }
+        [HttpPost(Router.AuthenticationRouting.CompleteProfile)]
+        public async Task<IActionResult> CompleteProfile([FromBody] CompleteProfileCommand command)
         {
             var response = await Mediator.Send(command);
             return NewResult(response);

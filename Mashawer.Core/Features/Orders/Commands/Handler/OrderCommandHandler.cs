@@ -10,7 +10,8 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
         IMapper mapper,
         IUnitOfWork unitOfWork,
         UserManager<ApplicationUser> _userManager,
-        IHttpContextAccessor httpContextAccessor
+        IHttpContextAccessor httpContextAccessor,
+        IUserDailyDiscountService _userDailyDiscountService
     ) : ResponseHandler,
         IRequestHandler<CreateOrderCommand, Response<string>>,
         IRequestHandler<UpdateOrderStatusCommand, Response<string>>,
@@ -22,66 +23,95 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly UserManager<ApplicationUser> userManager = _userManager;
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
+        private readonly IUserDailyDiscountService userDailyDiscountService = _userDailyDiscountService;
 
+        /*   public async Task<Response<string>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
+           {
+               var generalSetting = await _unitOfWork.GeneralSettings
+                   .GetTableNoTracking()
+                   .FirstOrDefaultAsync(cancellationToken);
+               var order = _mapper.Map<Order>(request);
+               if (generalSetting != null && generalSetting.DiscountPercentage > 0)
+               {
+                   var discount = order.TotalDeliveryPrice * generalSetting.DiscountPercentage;
+                   order.DeducationDelivery = discount;
+               }
+
+               // ✅ تحديد حالة الدفع
+               if (order.PaymentMethod == PaymentMethod.Visa || order.PaymentMethod == PaymentMethod.LocalWallet)
+                   order.PaymentStatus = PaymentStatus.Pending;
+
+               // ✅ حفظ الطلب في قاعدة البيانات
+               var result = await _orderService.CreateOrderAsync(order, cancellationToken);
+
+               if (result == "Created")
+               {
+                   await _unitOfWork.CompeleteAsync();
+                   return Created("Order has been created successfully", new { orderId = order.Id });
+               }
+
+               return UnprocessableEntity<string>("An error occurred while creating the order");
+           }
+           */
         public async Task<Response<string>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
         {
+            // 1) جلب إعدادات التطبيق
             var generalSetting = await _unitOfWork.GeneralSettings
                 .GetTableNoTracking()
                 .FirstOrDefaultAsync(cancellationToken);
 
-            // 🌀 تحويل الـ Command إلى Entity
+            // 2) تحويل الـ Command إلى Entity
             var order = _mapper.Map<Order>(request);
 
-            //double totalDistance = 0;
-            //decimal totalDeliveryPrice = 0;
-
-            //// ✅ جمع المسافات من Flutter وحساب السعر لكل مهمة
-            //foreach (var task in order.Tasks)
-            //{
-            //    double distance = task.DistanceKm; // المسافة من Flutter
-            //    totalDistance += distance;
-
-            //    // ✅ سعر كل مهمة = المسافة بالكيلومتر (قابل للتعديل لاحقًا)
-
-            //  //  task.DeliveryPrice = ((decimal)Math.Round(distance, 2) * 7) + 15;
-            //}
-
-            //// ✅ حساب إجمالي سعر التوصيل
-            //totalDeliveryPrice = (decimal)totalDistance * 7m;
-
-            //// ✅ تخزين الإجماليات داخل الطلب
-            //order.TotalDistanceKm = Math.Round(totalDistance, 2);
-           // order.TotalDeliveryPrice = Math.Round(totalDeliveryPrice, 2) + 15m;
-
-            // ✅ تطبيق خصم التطبيق (إن وجد)
+            // 3) تطبيق خصم التطبيق العام
+            decimal appDiscount = 0;
             if (generalSetting != null && generalSetting.DiscountPercentage > 0)
             {
-                var discount = order.TotalDeliveryPrice * generalSetting.DiscountPercentage;
-                order.DeducationDelivery = discount;
+                appDiscount = order.TotalDeliveryPrice.GetValueOrDefault() * generalSetting.DiscountPercentage;
+                order.DeducationDelivery = appDiscount;
+            }
+    /*
+            // 4) تطبيق الخصم اليومي للعميل
+            decimal dailyDiscount = 0;
+            var userDiscount = await _userDailyDiscountService
+                .GetUserDiscountAsync(order.ClientId, DateTime.UtcNow.Date);
+
+            if (userDiscount != null)
+            {
+                dailyDiscount = userDiscount.DiscountAmount;
+                order.DeducationDelivery = (order.DeducationDelivery ?? 0) + dailyDiscount;
+
+                // منع إعادة استخدام الخصم
+                await _userDailyDiscountService.MarkUsedAsync(userDiscount.Id);
             }
 
-            // ✅ تحديد حالة الدفع
+            // 5) حساب السعر النهائي بعد الخصومات
+            order.FinalPrice = (order.TotalDeliveryPrice ?? 0) + (order.TotalPrice ?? 0) - (order.DeducationDelivery ?? 0);
+            */
+
+            // 6) تحديد حالة الدفع
             if (order.PaymentMethod == PaymentMethod.Visa || order.PaymentMethod == PaymentMethod.LocalWallet)
                 order.PaymentStatus = PaymentStatus.Pending;
 
-            // ✅ حساب السعر الإجمالي للطلب (السعر الكلي = سعر العناصر + سعر التوصيل)
-        //    order.CalcTotalPrice();
-         //   order.CalcTotalDeliveryPrice();
-          //  order.TotalPrice = order.TotalPrice + order.TotalDeliveryPrice;
-
-            // ✅ حفظ الطلب في قاعدة البيانات
+            // 7) حفظ الأوردر في قاعدة البيانات
             var result = await _orderService.CreateOrderAsync(order, cancellationToken);
 
             if (result == "Created")
             {
                 await _unitOfWork.CompeleteAsync();
-                return Created("Order has been created successfully", new { orderId = order.Id });
+
+               
+                return Created("Order has been created successfully", new
+                {
+                    orderId = order.Id,
+                    totalDeliveryPrice = order.TotalDeliveryPrice,
+                    deductionDelivery = order.DeducationDelivery,
+                    
+                });
             }
 
             return UnprocessableEntity<string>("An error occurred while creating the order");
         }
-
-
 
         // ✅ تحديث حالة الطلب
         public async Task<Response<string>> Handle(UpdateOrderStatusCommand request, CancellationToken cancellationToken)
