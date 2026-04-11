@@ -16,6 +16,7 @@
         Task<WalletInitResponse> InitWalletPaymentAsync(CreateWalletPaymentRequest input);
 
         bool VerifyHmac(IDictionary<string, string?> received, string providedHmac, string[] fieldOrder);
+        Task<List<Dictionary<string, object>>?> GetTransactionAsync(int orderId);
     }
 
 }

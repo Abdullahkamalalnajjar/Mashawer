@@ -1,7 +1,12 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Mashawer.Data.Entities;
+using Microsoft.Extensions.Configuration;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 
-public class PaymobService
+public class PaymobService 
 {
     private readonly HttpClient _http;
     private readonly IConfiguration _config;
@@ -20,6 +25,8 @@ public class PaymobService
     private string WalletIntegrationId => _config["Paymob:WalletIntegrationId"]!;
     private string IFrameId => _config["Paymob:IFrameId"]!;
     private string HmacSecret => _config["Paymob:HmacSecret"]!;
+    private string PublicKey => _config["Paymob:PublicKey"]!;
+    private string SecretKey => _config["Paymob:SecretKey"]!;
 
     // 1) AUTH
     public async Task<string> AuthenticateAsync()
@@ -166,5 +173,32 @@ public class PaymobService
         var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(sb.ToString()));
         var calc = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
         return string.Equals(calc, providedHmac, StringComparison.OrdinalIgnoreCase);
+    }
+    public async Task<List<Dictionary<string, object>>?> GetTransactionAsync(int orderId)
+    {
+        var token = await AuthenticateAsync();
+
+        _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        var transResponse = await _http.GetAsync($"{BaseUrl}/acceptance/transactions?order_id={orderId}");
+
+        transResponse.EnsureSuccessStatusCode();
+
+        var transJson = await transResponse.Content.ReadAsStringAsync();
+
+        using var doc = JsonDocument.Parse(transJson);
+
+        if (doc.RootElement.ValueKind == JsonValueKind.Array)
+        {
+            return JsonSerializer.Deserialize<List<Dictionary<string, object>>>(transJson);
+        }
+        else if (doc.RootElement.ValueKind == JsonValueKind.Object)
+        {
+            if (doc.RootElement.TryGetProperty("results", out var txElement) && txElement.ValueKind == JsonValueKind.Array)
+            {
+                return JsonSerializer.Deserialize<List<Dictionary<string, object>>>(txElement.GetRawText());
+            }
+        }
+
+        return null;
     }
 }

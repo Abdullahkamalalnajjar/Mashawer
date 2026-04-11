@@ -18,7 +18,6 @@ namespace Mashawer.Api.Controllers
         private readonly PaymobService _paymob;
         private readonly ICurrentUserService _currentUserService;
         private readonly IUnitOfWork _unitOfWork;
-        private readonly HttpClient _http = new HttpClient();
         public PaymobController(PaymobService paymob, ICurrentUserService currentUserService, IUnitOfWork unitOfWork)
         {
             _paymob = paymob;
@@ -143,48 +142,12 @@ namespace Mashawer.Api.Controllers
         [HttpGet("last-transaction/{orderId}")]
         public async Task<IActionResult> GetLastTransaction(int orderId)
         {
-            string apiKey = "ZXlKaGJHY2lPaUpJVXpVeE1pSXNJblI1Y0NJNklrcFhWQ0o5LmV5SmpiR0Z6Y3lJNklrMWxjbU5vWVc1MElpd2ljSEp2Wm1sc1pWOXdheUk2TVRFd056VXdNaXdpYm1GdFpTSTZJbWx1YVhScFlXd2lmUS5xWlpOMDZlVUtTRGdTdTAtOTBrZ3Z5TUlSUXBZMDZBWHBBeHcyVjlVZGdyb0hYaG9kVG5tY0dUS3BaUHhubEhEOVdDSXJodUxaUExyMDJwUzFQSW9TZw=="; // API Key بتاعك
-
-            // 1. Get Auth Token
-            var authResponse = await _http.PostAsJsonAsync("https://accept.paymob.com/api/auth/tokens", new
+            var transactions = await _paymob.GetTransactionAsync(orderId);
+            if (transactions == null)
             {
-                api_key = apiKey
-            });
-
-            if (!authResponse.IsSuccessStatusCode)
-                return BadRequest("Auth failed");
-
-            var authJson = await authResponse.Content.ReadAsStringAsync();
-            var authData = JsonSerializer.Deserialize<Dictionary<string, object>>(authJson);
-            string token = authData?["token"]?.ToString() ?? "";
-
-            // 2. Get Transactions by orderId
-            _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            var transResponse = await _http.GetAsync($"https://accept.paymob.com/api/acceptance/transactions?order_id={orderId}");
-
-            if (!transResponse.IsSuccessStatusCode)
-                return BadRequest("Failed to get transactions");
-
-            var transJson = await transResponse.Content.ReadAsStringAsync();
-
-            using var doc = JsonDocument.Parse(transJson);
-
-            if (doc.RootElement.ValueKind == JsonValueKind.Array)
-            {
-                var transactions = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(transJson);
-                return Ok(transactions);
+                return NotFound("Transactions not found or invalid format.");
             }
-            else if (doc.RootElement.ValueKind == JsonValueKind.Object)
-            {
-                if (doc.RootElement.TryGetProperty("transactions", out var txElement) && txElement.ValueKind == JsonValueKind.Array)
-                {
-                    var transactions = JsonSerializer.Deserialize<List<Dictionary<string, object>>>(txElement.GetRawText());
-                    return Ok(transactions);
-                }
-                return BadRequest("No transactions array found");
-            }
-
-            return BadRequest("Invalid response format");
+            return Ok(transactions);
         }
 
         public class PaymobWebhookDto
