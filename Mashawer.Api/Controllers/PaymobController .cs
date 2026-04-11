@@ -40,8 +40,33 @@ namespace Mashawer.Api.Controllers
         {
             var userId = _currentUserService.UserId;
             if (userId == null) return Unauthorized("User not authenticated");
-            var walletId = await _unitOfWork.Wallets.GetTableNoTracking().Where(w => w.UserId == userId).Select(w => w.Id).FirstOrDefaultAsync();
-            var result = await _paymob.InitCardPaymentAsync(req, walletId);
+
+            var user = await _unitOfWork.Users.GetTableNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null) return NotFound("User not found.");
+
+            var wallet = await _unitOfWork.Wallets.GetTableNoTracking().FirstOrDefaultAsync(w => w.UserId == userId);
+            if (wallet == null)
+            {
+                var newWallet = new Mashawer.Data.Entities.Wallet
+                {
+                    UserId = userId,
+                    Balance = 0
+                };
+                await _unitOfWork.Wallets.AddAsync(newWallet);
+                await _unitOfWork.CompeleteAsync();
+
+                wallet = await _unitOfWork.Wallets.GetTableNoTracking().FirstOrDefaultAsync(w => w.UserId == userId);
+            }
+
+            req.Billing = new PaymobBillingData
+            {
+                FirstName = user.FirstName ?? "User",
+                LastName = user.LastName ?? "Name",
+                Email = user.Email ?? "test@example.com",
+                PhoneNumber = user.PhoneNumber ?? "+201000000000"
+            };
+
+            var result = await _paymob.InitCardPaymentAsync(req, wallet.Id);
             return Ok(result);
         }
 
