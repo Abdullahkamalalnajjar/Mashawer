@@ -3,6 +3,9 @@ using Mashawer.Data.Entities.ClasssOfOrder;
 using Mashawer.Data.Enums;
 using Mashawer.Data.Dtos;
 using Mashawer.Service.Abstracts;
+using Microsoft.Extensions.Options;
+using Mashawer.Data.Helpers;
+
 
 namespace Mashawer.Core.Features.Orders.Commands.Handler
 {
@@ -16,7 +19,8 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
         IUserDailyDiscountService userDailyDiscountService,
         IPaymobService paymobService,
         IWalletService walletService,
-        ICurrentUserService currentUserService
+        ICurrentUserService currentUserService,
+        IOptions<FeesSettings> feesSettings
     ) : ResponseHandler,
         IRequestHandler<CreateOrderCommand, Response<string>>,
         IRequestHandler<UpdateOrderStatusCommand, Response<string>>,
@@ -32,6 +36,7 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
         private readonly IPaymobService _paymobService = paymobService;
         private readonly IWalletService _walletService = walletService;
         private readonly ICurrentUserService _currentUserService = currentUserService;
+        private readonly FeesSettings _feesSettings = feesSettings.Value;
 
         public async Task<Response<string>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
         {
@@ -99,7 +104,7 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
                     return BadRequest<string>("رصيد غير كافي");
                 }
 
-                await _walletService.UpdateWalletBalanceAsync(wallet.Id, -order.FinalPrice.Value, "OrderPayment",
+                await _walletService.UpdateWalletBalanceAsync(wallet.Id, order.FinalPrice.Value, "OrderPayment",
                     cancellationToken);
                 order.PaymentStatus = PaymentStatus.Paid;
             }
@@ -144,6 +149,20 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
             if (order.Status == request.NewStatus)
                 return BadRequest<string>($"Order is already {order.Status}.");
 
+            if (request.NewStatus == OrderStatus.Cancelled && order.PaymentStatus == PaymentStatus.Paid)
+            {
+                if (order.FinalPrice.HasValue && order.FinalPrice.Value > 0)
+                {
+                    var wallet = await _walletService.GetWalletByUserIdAsync(order.ClientId);
+                    if (wallet != null)
+                    {
+                        await _walletService.UpdateWalletBalanceAsync(wallet.Id, order.FinalPrice.Value, "Refund",
+                            cancellationToken);
+                        order.PaymentStatus = PaymentStatus.Refunded;
+                    }
+                }
+            }
+
             if (request.NewStatus == OrderStatus.Confirmed)
             {
                 if (string.IsNullOrWhiteSpace(request.DriverId))
@@ -152,6 +171,14 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
                 var driver = await _userManager.FindByIdAsync(request.DriverId);
                 if (driver == null)
                     return BadRequest<string>("Driver not found.");
+
+                var driverWallet = await _walletService.GetWalletByUserIdAsync(request.DriverId);
+                if (driverWallet == null || driverWallet.Balance < _feesSettings.RepresentativeConfirmationFee)
+                {
+                    return BadRequest<string>("رصيد المندوب غير كافي لقبول الطلب");
+                }
+
+                await _walletService.UpdateWalletBalanceAsync(driverWallet.Id, _feesSettings.RepresentativeConfirmationFee, "OrderFee", cancellationToken);
 
                 order.DriverId = driver.Id;
             }

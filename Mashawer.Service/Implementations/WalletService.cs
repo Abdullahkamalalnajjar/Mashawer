@@ -26,18 +26,22 @@ namespace Mashawer.Service.Implementations
                     return "WalletDisabled";
 
                 // Update balance based on transaction type
-                if (type.ToLower() == "deposit")
+                var lowerCaseType = type.ToLower();
+                if (lowerCaseType == "deposit" || lowerCaseType == "refund")
                 {
                     wallet.Balance += amount;
                 }
-                else if (type.ToLower() == "withdraw")
+                else if (lowerCaseType == "withdraw" || lowerCaseType == "orderpayment" || lowerCaseType == "orderfee")
                 {
                     if (wallet.Balance < amount)
                         return "InsufficientBalance";
                     wallet.Balance -= amount;
                 }
                 else
+                {
+                    _logger.LogWarning($"Invalid transaction type for wallet update: {type}");
                     return "InvalidTransactionType";
+                }
 
                 // Update the wallet
                 _unitOfWork.Wallets.Update(wallet);

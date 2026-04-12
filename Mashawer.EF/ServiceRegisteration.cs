@@ -43,6 +43,7 @@ namespace Mashawer.EF
             // mail settings
             services.Configure<MailSettings>(configuration.GetSection(nameof(MailSettings))); // for dependency injection
             services.Configure<StripeSettings>(configuration.GetSection(nameof(StripeSettings))); // for dependency injection
+            services.Configure<Data.Helpers.FeesSettings>(configuration.GetSection(nameof(FeesSettings)));
             services.AddAuthentication(x =>
             {
                 x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
