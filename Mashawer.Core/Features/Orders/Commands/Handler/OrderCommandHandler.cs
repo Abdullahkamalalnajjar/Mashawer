@@ -96,13 +96,17 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
                 var wallet = await _walletService.GetWalletByUserIdAsync(user.Id);
                 if (wallet == null || wallet.Balance < order.FinalPrice)
                 {
-                    return BadRequest<string>("Insufficient wallet balance");
+                    return BadRequest<string>("رصيد غير كافي");
                 }
+
+                await _walletService.UpdateWalletBalanceAsync(wallet.Id, -order.FinalPrice.Value, "OrderPayment",
+                    cancellationToken);
+                order.PaymentStatus = PaymentStatus.Paid;
             }
 
 
             // 6) تحديد حالة الدفع
-            if (order.PaymentMethod == PaymentMethod.Visa || order.PaymentMethod == PaymentMethod.AppWallet)
+            if (order.PaymentMethod == PaymentMethod.Visa)
                 order.PaymentStatus = PaymentStatus.Pending;
 
             // 7) حفظ الأوردر في قاعدة البيانات

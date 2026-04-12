@@ -221,12 +221,15 @@ namespace Mashawer.Api.Controllers
                     walletTransaction.Status = "Paid";
                     walletTransaction.PaidAt = DateTime.UtcNow;
 
-                    var wallet = await _unitOfWork.Wallets.GetTableAsTracking()
-                        .FirstOrDefaultAsync(w => w.Id == walletTransaction.WalletId);
-
-                    if (wallet != null)
+                    if (walletTransaction.Type == "Deposit")
                     {
-                        wallet.Balance += amount;
+                        var wallet = await _unitOfWork.Wallets.GetTableAsTracking()
+                            .FirstOrDefaultAsync(w => w.Id == walletTransaction.WalletId);
+
+                        if (wallet != null)
+                        {
+                            wallet.Balance += amount;
+                        }
                     }
 
                     await _unitOfWork.CompeleteAsync();
@@ -240,7 +243,7 @@ namespace Mashawer.Api.Controllers
 
                     if (order != null)
                     {
-                        var orderPrice = order.TotalPrice ?? 0m;
+                        var orderPrice = order.FinalPrice ?? 0m;
 
                         // تأكد من أن المبلغ المدفوع يطابق سعر الطلب
                         if (amount != orderPrice)
