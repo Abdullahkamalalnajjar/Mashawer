@@ -59,7 +59,7 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
             decimal appDiscount = 0;
             if (generalSetting != null && generalSetting.DiscountPercentage > 0)
             {
-                appDiscount = order.TotalDeliveryPrice.GetValueOrDefault() * generalSetting.DiscountPercentage;
+                appDiscount = order.TotalPrice.GetValueOrDefault() * generalSetting.DiscountPercentage;
                 order.DeducationDelivery = appDiscount;
             }
 
@@ -78,7 +78,7 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
             }
 
             // 5) حساب السعر النهائي بعد الخصومات
-            order.FinalPrice = (order.TotalDeliveryPrice ?? 0) + (order.TotalPrice ?? 0) - (order.DeducationDelivery ?? 0);
+            order.FinalPrice = (order.TotalPrice ?? 0) - (order.DeducationDelivery ?? 0);
 
             if (request.PaymentMethod == PaymentMethod.Visa)
             {
