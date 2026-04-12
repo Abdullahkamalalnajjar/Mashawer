@@ -18,11 +18,14 @@ namespace Mashawer.Api.Controllers
         private readonly PaymobService _paymob;
         private readonly ICurrentUserService _currentUserService;
         private readonly IUnitOfWork _unitOfWork;
-        public PaymobController(PaymobService paymob, ICurrentUserService currentUserService, IUnitOfWork unitOfWork)
+        private readonly ILogger<PaymobController> _logger;
+
+        public PaymobController(PaymobService paymob, ICurrentUserService currentUserService, IUnitOfWork unitOfWork, ILogger<PaymobController> logger)
         {
             _paymob = paymob;
             _currentUserService = currentUserService;
             _unitOfWork = unitOfWork;
+            _logger = logger;
         }
 
         // ✅ (اختياري) فحص سريع للـ Auth
@@ -207,10 +210,14 @@ namespace Mashawer.Api.Controllers
         [HttpPost("api/v1/paymob/webhook")]
         public async Task<IActionResult> PaymobWebhook([FromBody] PaymobWebhookDto payload)
         {
+            _logger.LogInformation("Paymob webhook received: {Payload}", JsonSerializer.Serialize(payload));
+
             if (payload.Type == "TRANSACTION" && payload.Obj.Success)
             {
+                _logger.LogInformation("Webhook is a successful transaction.");
                 var merchantOrderId = payload.Obj.Order.MerchantOrderId;
                 var amount = payload.Obj.AmountCents / 100m;
+                _logger.LogInformation("Parsed MerchantOrderId: {MerchantOrderId}, Amount: {Amount}", merchantOrderId, amount);
 
                 // 1) إذا كان هناك WalletTransaction مرتبط بالـ merchantOrderId حدّثه وزوّد رصيد المحفظة
                 var walletTransaction = await _unitOfWork.WalletTransactions.GetTableAsTracking()
@@ -218,6 +225,7 @@ namespace Mashawer.Api.Controllers
 
                 if (walletTransaction != null && walletTransaction.Status != "Paid")
                 {
+                    _logger.LogInformation("Found matching WalletTransaction with ID: {TransactionId}", walletTransaction.Id);
                     walletTransaction.Status = "Paid";
                     walletTransaction.PaidAt = DateTime.UtcNow;
 
@@ -228,37 +236,43 @@ namespace Mashawer.Api.Controllers
 
                         if (wallet != null)
                         {
+                            _logger.LogInformation("Updating wallet balance for wallet ID: {WalletId}. Old Balance: {OldBalance}, Amount: {Amount}", wallet.Id, wallet.Balance, amount);
                             wallet.Balance += amount;
                         }
                     }
 
                     await _unitOfWork.CompeleteAsync();
+                    _logger.LogInformation("WalletTransaction updated successfully.");
                 }
 
                 // 2) إذا كان merchantOrderId يمثل رقم الطلب في التطبيق (app order id)
                 if (int.TryParse(merchantOrderId, out var appOrderId))
                 {
+                    _logger.LogInformation("Successfully parsed MerchantOrderId as AppOrderId: {AppOrderId}", appOrderId);
                     var order = await _unitOfWork.Orders.GetTableAsTracking()
                         .FirstOrDefaultAsync(o => o.Id == appOrderId);
 
                     if (order != null)
                     {
+                        _logger.LogInformation("Found matching order with ID: {OrderId}", order.Id);
                         var orderPrice = order.FinalPrice ?? 0m;
 
                         // تأكد من أن المبلغ المدفوع يطابق سعر الطلب
                         if (amount != orderPrice)
                         {
-                            // إذا لم يتطابق المبلغ، نُخطر ونوقف المتابعة (يمكن تغيير السلوك حسب الحاجة)
+                            _logger.LogWarning("Paid amount ({PaidAmount}) does not match order final price ({OrderPrice}) for Order ID: {OrderId}", amount, orderPrice, order.Id);
                             return BadRequest("Paid amount does not match order total price.");
                         }
 
                         // ضع حالة الدفع واحتفظ بمعرّف الـ transaction
                         order.PaymentStatus = Mashawer.Data.Enums.PaymentStatus.Paid;
                         order.PaymobTransactionId = payload.Obj.Order.Id.ToString();
+                        _logger.LogInformation("Updating order {OrderId} status to Paid.", order.Id);
 
                         // إذا كان للطلب مندوب، اخصم 25% من رصيد المندوب
                         if (!string.IsNullOrEmpty(order.DriverId))
                         {
+                            _logger.LogInformation("Order {OrderId} has a driver. Calculating commission.", order.Id);
                             var commission = orderPrice * 0.25m;
 
                             var driverWallet = await _unitOfWork.Wallets.GetTableAsTracking()
@@ -281,6 +295,7 @@ namespace Mashawer.Api.Controllers
                             }
                             else
                             {
+                                 _logger.LogInformation("Driver {DriverId} does not have a wallet. Creating one.", order.DriverId);
                                 // 1. Create and save the new wallet
                                 var newWallet = new Mashawer.Data.Entities.Wallet
                                 {
@@ -305,8 +320,21 @@ namespace Mashawer.Api.Controllers
                         }
 
                         await _unitOfWork.CompeleteAsync();
+                        _logger.LogInformation("Successfully updated order {OrderId} and related entities.", order.Id);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Order not found for AppOrderId: {AppOrderId}", appOrderId);
                     }
                 }
+                else
+                {
+                     _logger.LogWarning("Could not parse MerchantOrderId '{MerchantOrderId}' as an integer.", merchantOrderId);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("Webhook received but was not a successful transaction. Type: {Type}, Success: {Success}", payload.Type, payload.Obj.Success);
             }
 
             return Ok(); // لازم ترجع 200 عشان Paymob يعتبر الـ Webhook ناجح

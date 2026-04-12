@@ -23,6 +23,7 @@
         public class CreateCardPaymentRequest
         {
             public int AmountCents { get; set; }        // مثال: 10000 = 100 EGP
+            public string? MerchantOrderId { get; set; }
         }
 
         public class CreateWalletPaymentRequest

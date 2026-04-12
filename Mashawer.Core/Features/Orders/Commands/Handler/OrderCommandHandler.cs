@@ -70,32 +70,17 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
 
             if (userDiscount != null)
             {
-                dailyDiscount = userDiscount.Sum(d=>d.DiscountAmount);
+                dailyDiscount = userDiscount.Sum(d => d.DiscountAmount);
                 order.DeducationDelivery = (order.DeducationDelivery ?? 0) + dailyDiscount;
 
                 // منع إعادة استخدام الخصم
-                await _userDailyDiscountService.MarkUsedAsync(userDiscount.Select(d=>d.Id).ToList());
+                await _userDailyDiscountService.MarkUsedAsync(userDiscount.Select(d => d.Id).ToList());
             }
 
             // 5) حساب السعر النهائي بعد الخصومات
             order.FinalPrice = (order.TotalPrice ?? 0) - (order.DeducationDelivery ?? 0);
 
-            if (request.PaymentMethod == PaymentMethod.Visa)
-            {
-                var billingData = new PaymobDto.PaymobBillingData
-                {
-                    FirstName = user.FullName,
-                    LastName = user.FullName,
-                    Email = user.Email,
-                    PhoneNumber = user.PhoneNumber
-                };
-                var paymentUrl = await _paymobService.InitCardPaymentAsync(new()
-                {
-                    AmountCents = (int)(order.FinalPrice * 100),
-                });
-                return Success(paymentUrl.IframeUrl);
-            }
-
+            // 6) Handle payment logic
             if (request.PaymentMethod == PaymentMethod.AppWallet)
             {
                 var wallet = await _walletService.GetWalletByUserIdAsync(user.Id);
@@ -108,30 +93,48 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
                     cancellationToken);
                 order.PaymentStatus = PaymentStatus.Paid;
             }
-
-
-            // 6) تحديد حالة الدفع
-            if (order.PaymentMethod == PaymentMethod.Visa)
-                order.PaymentStatus = PaymentStatus.Pending;
-
-            // 7) حفظ الأوردر في قاعدة البيانات
-            var result = await _orderService.CreateOrderAsync(order, cancellationToken);
-
-            if (result == "Created")
+            else if (request.PaymentMethod == PaymentMethod.Visa)
             {
-                await _unitOfWork.CompeleteAsync();
-
-
-                return Created("Order has been created successfully", new
-                {
-                    orderId = order.Id,
-                    totalDeliveryPrice = order.TotalDeliveryPrice,
-                    deductionDelivery = order.DeducationDelivery,
-
-                });
+                order.PaymentStatus = PaymentStatus.Pending;
+            }
+            else
+            {
+                order.PaymentStatus = PaymentStatus.NotPaid;
             }
 
-            return UnprocessableEntity<string>("An error occurred while creating the order");
+            // 7) Save the order
+            var result = await _orderService.CreateOrderAsync(order, cancellationToken);
+            if (result != "Created")
+            {
+                return UnprocessableEntity<string>("An error occurred while creating the order");
+            }
+            await _unitOfWork.CompeleteAsync();
+
+            // 8) Post-save actions
+            if (request.PaymentMethod == PaymentMethod.Visa)
+            {
+                var billingData = new PaymobDto.PaymobBillingData
+                {
+                    FirstName = user.FullName,
+                    LastName = user.FullName,
+                    Email = user.Email,
+                    PhoneNumber = user.PhoneNumber
+                };
+                var paymentUrl = await _paymobService.InitCardPaymentAsync(new()
+                {
+                    AmountCents = (int)(order.FinalPrice * 100),
+                    MerchantOrderId = order.Id.ToString()
+                });
+                return Success(paymentUrl.IframeUrl);
+            }
+            
+            return Created("Order has been created successfully", new
+            {
+                orderId = order.Id,
+                totalDeliveryPrice = order.TotalDeliveryPrice,
+                deductionDelivery = order.DeducationDelivery,
+
+            });
         }
 
         // ✅ تحديث حالة الطلب
