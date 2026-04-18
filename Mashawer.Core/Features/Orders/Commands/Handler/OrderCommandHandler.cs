@@ -110,6 +110,8 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
             }
             await _unitOfWork.CompeleteAsync();
 
+            var createdOrder = await _orderService.GetOrderByIdAsync(order.Id);
+
             // 8) Post-save actions
             if (request.PaymentMethod == PaymentMethod.Visa)
             {
@@ -125,16 +127,10 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
                     AmountCents = (int)(order.FinalPrice * 100),
                     MerchantOrderId = order.Id.ToString()
                 });
-                return Success(paymentUrl.IframeUrl);
+                return Success(paymentUrl.IframeUrl, createdOrder);
             }
             
-            return Created("Order has been created successfully", new
-            {
-                orderId = order.Id,
-                totalDeliveryPrice = order.TotalDeliveryPrice,
-                deductionDelivery = order.DeducationDelivery,
-
-            });
+            return Created("Order has been created successfully", createdOrder);
         }
 
         // ✅ تحديث حالة الطلب
