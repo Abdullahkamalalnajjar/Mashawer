@@ -16,10 +16,10 @@ namespace Mashawer.Api.Controllers
             return NewResult(response);
         }
         [HttpGet("orders-by-status-or-address")]
-        public async Task<IActionResult> GetOrdersByStatusOrAddressAsync([FromQuery] OrderStatus orderStatus, string? address, DateTime? dateTime)
+        public async Task<IActionResult> GetOrdersByStatusOrAddressAsync([FromQuery] OrderStatus orderStatus, string? address, DateTime? dateTime, CancellationToken cancellationToken)
         {
             var query = new GetOrdersByStatusAndAddressQuery(orderStatus, address, dateTime);
-            var response = await Mediator.Send(query);
+            var response = await Mediator.Send(query, cancellationToken);
             return NewResult(response);
         }
     }

@@ -1,4 +1,5 @@
 ﻿using Mashawer.Core.Features.RepresentitiveCancelOrders.Command.Models;
+using Mashawer.Core.Helpers;
 using Mashawer.Data.Entities.ClasssOfOrder;
 using Mashawer.Data.Enums;
 
@@ -19,20 +20,40 @@ namespace Mashawer.Core.Features.RepresentitiveCancelOrders.Command.Handlers
 
         public async Task<Response<string>> Handle(AddRepresentitiveCancelOrderCommand request, CancellationToken cancellationToken)
         {
+            string? currentDriverId = null;
+
             var order = await _unitOfWork.Orders
                 .GetTableAsTracking()
                 .Include(x => x.Driver)
                 .Include(x => x.Client)
                 .Include(x => x.Tasks)
-                .FirstOrDefaultAsync(x => x.Id == request.OrderId);
+                .FirstOrDefaultAsync(x => x.Id == request.OrderId, cancellationToken);
 
             if (order == null)
                 return NotFound<string>("Order not found.");
 
+            currentDriverId = order.DriverId;
+            if (string.IsNullOrWhiteSpace(currentDriverId))
+                return BadRequest<string>("Order is not assigned to a representative.");
+
+            if (OrderCancellationWalletHelper.ShouldApplyCancellationFee(order))
+            {
+                await OrderCancellationWalletHelper.AdjustWalletBalanceAsync(
+                    _unitOfWork,
+                    currentDriverId,
+                    -OrderCancellationWalletHelper.CancellationFeeAmount,
+                    "CancellationFee",
+                    order.Id,
+                    cancellationToken);
+            }
+
             // ❌ مش Pending … لازم تكون CancelledByDriver
             order.Status = OrderStatus.Pending;
+            order.CancelReason = request.Reason;
             if (order.Driver != null)
                 order.AddressDriverAfterCancel = order.Driver.RepresentativeAddress;
+            order.DriverId = null;
+            order.Driver = null;
             // تحديث Tasks
             foreach (var orderTask in order.Tasks)
             {
@@ -43,7 +64,7 @@ namespace Mashawer.Core.Features.RepresentitiveCancelOrders.Command.Handlers
 
             var representitiveCancelOrder = new RepresentitiveCancelOrder
             {
-                UserId = order.DriverId,
+                UserId = currentDriverId,
                 OrderId = request.OrderId,
                 Reason = request.Reason
             };

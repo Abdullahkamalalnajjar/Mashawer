@@ -70,6 +70,39 @@ namespace Mashawer.Service.Implementations
             }
         }
 
+        public async Task<string> UpdateWalletBalanceAsync(string userId, decimal amount, string type, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var wallet = await _unitOfWork.Wallets
+                    .GetTableAsTracking()
+                    .FirstOrDefaultAsync(w => w.UserId == userId, cancellationToken);
+
+                var lowerCaseType = type.ToLower();
+                if (wallet == null)
+                {
+                    if (lowerCaseType != "deposit" && lowerCaseType != "refund")
+                        return "WalletNotFound";
+
+                    wallet = new Wallet
+                    {
+                        UserId = userId,
+                        Balance = 0
+                    };
+
+                    await _unitOfWork.Wallets.AddAsync(wallet, cancellationToken);
+                    await _unitOfWork.CompeleteAsync();
+                }
+
+                return await UpdateWalletBalanceAsync(wallet.Id, amount, type, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error updating wallet balance for UserId: {userId}");
+                return "Error";
+            }
+        }
+
         public async Task<string> UpdateWalletDisableStatusAsync(int walletId, bool isDisable, CancellationToken cancellationToken)
         {
             try

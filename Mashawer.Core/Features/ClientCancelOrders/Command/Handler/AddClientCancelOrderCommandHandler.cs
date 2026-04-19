@@ -1,4 +1,5 @@
 using Mashawer.Core.Features.ClientCancelOrders.Command.Model;
+using Mashawer.Core.Helpers;
 using Mashawer.Data.Entities.ClasssOfOrder;
 using Mashawer.Data.Enums;
 
@@ -19,13 +20,41 @@ namespace Mashawer.Core.Features.ClientCancelOrders.Command.Handler
 
         public async Task<Response<string>> Handle(AddClientCancelOrderCommand request, CancellationToken cancellationToken)
         {
-            var order = await _unitOfWork.Orders.GetTableAsTracking().Include(x => x.Driver).Include(x => x.Tasks).Include(x => x.Client).Where(x => x.Id == request.OrderId).FirstOrDefaultAsync();
+            var order = await _unitOfWork.Orders.GetTableAsTracking().Include(x => x.Driver).Include(x => x.Tasks).Include(x => x.Client).Where(x => x.Id == request.OrderId).FirstOrDefaultAsync(cancellationToken);
             if (order == null)
             {
                 return NotFound<string>("Order not found.");
             }
+
+            var shouldApplyCancellationFee = OrderCancellationWalletHelper.ShouldApplyCancellationFee(order);
+
+            if (order.PaymentStatus == PaymentStatus.Paid)
+            {
+                var refundAmount = order.FinalPrice ?? order.TotalPrice ?? 0m;
+                await OrderCancellationWalletHelper.AdjustWalletBalanceAsync(
+                    _unitOfWork,
+                    order.ClientId,
+                    refundAmount,
+                    "Refund",
+                    order.Id,
+                    cancellationToken);
+                order.PaymentStatus = PaymentStatus.Refunded;
+            }
+
+            if (shouldApplyCancellationFee)
+            {
+                await OrderCancellationWalletHelper.AdjustWalletBalanceAsync(
+                    _unitOfWork,
+                    order.ClientId,
+                    -OrderCancellationWalletHelper.CancellationFeeAmount,
+                    "CancellationFee",
+                    order.Id,
+                    cancellationToken);
+            }
+
             // update order status to cancelled by client
             order.Status = OrderStatus.Cancelled;
+            order.CancelReason = request.Reason;
             // make order's driver id null
             order.DriverId = null;
             // make ordertask is cancelled

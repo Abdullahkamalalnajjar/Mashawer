@@ -24,7 +24,20 @@ namespace Mashawer.Core.Features.Wallets.Commands.Handlers
                 !request.Type.Equals("Withdraw", StringComparison.OrdinalIgnoreCase))
                 return BadRequest<string>("Type must be either 'Deposit' or 'Withdraw'");
 
-            var result = await _walletService.UpdateWalletBalanceAsync(request.WalletId, request.Amount, request.Type, cancellationToken);
+            string result;
+            if (!string.IsNullOrWhiteSpace(request.UserId))
+            {
+                result = await _walletService.UpdateWalletBalanceAsync(request.UserId, request.Amount, request.Type, cancellationToken);
+            }
+            else if (request.WalletId > 0)
+            {
+                result = await _walletService.UpdateWalletBalanceAsync(request.WalletId, request.Amount, request.Type, cancellationToken);
+            }
+            else
+            {
+                return BadRequest<string>("WalletId or UserId is required");
+            }
+
             return result switch
             {
                 "WalletNotFound" => NotFound<string>("Wallet not found"),
@@ -50,4 +63,3 @@ namespace Mashawer.Core.Features.Wallets.Commands.Handlers
         }
     }
 }
-

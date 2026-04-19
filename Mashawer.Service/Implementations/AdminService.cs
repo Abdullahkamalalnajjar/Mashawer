@@ -33,16 +33,27 @@ namespace Mashawer.Service.Implementations
 
         public async Task<List<OrderDto>> GetAllOrdersDpendOnStatusAsync(OrderStatus orderStatus, string? address, DateTime? dateTime)
         {
-            var ordersQuery = _unitOfWork.Orders.GetTableNoTracking().Include(x => x.Driver)
+            var ordersQuery = _unitOfWork.Orders.GetTableNoTracking()
+                .Include(x => x.Driver)
+                .Include(x => x.Client)
+                .Include(x => x.Tasks)
+                    .ThenInclude(x => x.PurchaseItems)
                 .Where(o => o.Status == orderStatus);
-            var targetDate = (dateTime ?? DateTime.Now).Date;
 
             // If an address is provided, filter orders by the driver's address
             if (!string.IsNullOrEmpty(address))
             {
-                ordersQuery = ordersQuery.Where(o => o.Driver != null && o.Driver.RepresentativeAddress == address);
+                var normalizedAddress = address.Trim();
+                ordersQuery = ordersQuery.Where(o => o.Driver != null && o.Driver.RepresentativeAddress == normalizedAddress);
             }
-            var result = await ordersQuery.Select(OrderToDto).Where(c => c.CreatedAt.Date == targetDate).ToListAsync();
+
+            if (dateTime.HasValue)
+            {
+                var targetDate = dateTime.Value.Date;
+                ordersQuery = ordersQuery.Where(o => o.CreatedAt.Date == targetDate);
+            }
+
+            var result = await ordersQuery.Select(OrderToDto).ToListAsync();
             return result;
         }
         #region Expression: Convert Order to OrderDto

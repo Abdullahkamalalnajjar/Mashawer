@@ -3,7 +3,6 @@ using Mashawer.Data.Entities.ClasssOfOrder;
 using Mashawer.Data.Enums;
 using Mashawer.Data.Dtos;
 using Mashawer.Service.Abstracts;
-using Microsoft.Extensions.Options;
 using Mashawer.Data.Helpers;
 
 
@@ -19,8 +18,7 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
         IUserDailyDiscountService userDailyDiscountService,
         IPaymobService paymobService,
         IWalletService walletService,
-        ICurrentUserService currentUserService,
-        IOptions<FeesSettings> feesSettings
+        ICurrentUserService currentUserService
     ) : ResponseHandler,
         IRequestHandler<CreateOrderCommand, Response<string>>,
         IRequestHandler<UpdateOrderStatusCommand, Response<string>>,
@@ -36,7 +34,8 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
         private readonly IPaymobService _paymobService = paymobService;
         private readonly IWalletService _walletService = walletService;
         private readonly ICurrentUserService _currentUserService = currentUserService;
-        private readonly FeesSettings _feesSettings = feesSettings.Value;
+        private const decimal RepresentativeConfirmationFeePercentage = 0.25m;
+        private const decimal RepresentativeWalletMinBalance = -15m;
 
         public async Task<Response<string>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
         {
@@ -171,13 +170,33 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
                 if (driver == null)
                     return BadRequest<string>("Driver not found.");
 
-                var driverWallet = await _walletService.GetWalletByUserIdAsync(request.DriverId);
-                if (driverWallet == null || driverWallet.Balance < _feesSettings.RepresentativeConfirmationFee)
+                var driverWallet = await _unitOfWork.Wallets
+                    .GetTableAsTracking()
+                    .FirstOrDefaultAsync(w => w.UserId == request.DriverId, cancellationToken);
+
+                if (driverWallet == null)
+                    return BadRequest<string>("محفظة المندوب غير موجودة");
+
+                var orderAmount = order.FinalPrice ?? order.TotalPrice ?? 0m;
+                var confirmationFee = orderAmount * RepresentativeConfirmationFeePercentage;
+                var balanceAfterDeduction = driverWallet.Balance - confirmationFee;
+
+                if (balanceAfterDeduction < RepresentativeWalletMinBalance)
                 {
                     return BadRequest<string>("رصيد المندوب غير كافي لقبول الطلب");
                 }
 
-                await _walletService.UpdateWalletBalanceAsync(driverWallet.Id, _feesSettings.RepresentativeConfirmationFee, "OrderFee", cancellationToken);
+                driverWallet.Balance = balanceAfterDeduction;
+                _unitOfWork.Wallets.Update(driverWallet);
+
+                await _unitOfWork.WalletTransactions.AddAsync(new WalletTransaction
+                {
+                    WalletId = driverWallet.Id,
+                    Amount = confirmationFee,
+                    Type = "OrderFee",
+                    Status = "Paid",
+                    PaidAt = DateTime.UtcNow
+                }, cancellationToken);
 
                 order.DriverId = driver.Id;
             }
