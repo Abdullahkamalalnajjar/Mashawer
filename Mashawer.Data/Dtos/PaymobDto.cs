@@ -35,6 +35,12 @@
             public PaymobBillingData Billing { get; set; } = new();
         }
 
+        public class RechargeWalletByLocalWalletRequest
+        {
+            public int AmountCents { get; set; }
+            public string WalletMsisdn { get; set; } = "01000000000";
+        }
+
         public class CardInitResponse
         {
             public long OrderId { get; set; }

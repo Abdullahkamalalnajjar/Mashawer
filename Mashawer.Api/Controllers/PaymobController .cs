@@ -71,6 +71,35 @@ namespace Mashawer.Api.Controllers
         }
 
         // ✅ 2) إنشاء دفع بالمحفظة — يرجّع Redirect URL
+        [Authorize]
+        [HttpPost("wallet/recharge")]
+        public async Task<IActionResult> RechargeWalletByLocalWallet([FromBody] RechargeWalletByLocalWalletRequest req)
+        {
+            var userId = _currentUserService.UserId;
+            if (string.IsNullOrWhiteSpace(userId))
+                return Unauthorized("User not authenticated");
+
+            var user = await _unitOfWork.Users.GetTableNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
+            if (user == null)
+                return NotFound("User not found.");
+
+            var result = await _paymob.InitWalletPaymentAsync(new CreateWalletPaymentRequest
+            {
+                AmountCents = req.AmountCents,
+                WalletMsisdn = req.WalletMsisdn,
+                Currency = "EGP",
+                Billing = new PaymobBillingData
+                {
+                    FirstName = user.FirstName ?? "User",
+                    LastName = user.LastName ?? "Name",
+                    Email = user.Email ?? "test@example.com",
+                    PhoneNumber = user.PhoneNumber ?? req.WalletMsisdn
+                }
+            });
+
+            return Ok(result);
+        }
+
         [HttpPost("wallet")]
         public async Task<IActionResult> CreateWallet([FromBody] CreateWalletPaymentRequest req)
         {
@@ -344,4 +373,3 @@ namespace Mashawer.Api.Controllers
 
     }
 }
-

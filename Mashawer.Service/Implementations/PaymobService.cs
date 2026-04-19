@@ -147,6 +147,23 @@ public class PaymobService : IPaymobService
     // 4B) WALLET FLOW: إرجاع Redirect URL
     public async Task<WalletInitResponse> InitWalletPaymentAsync(CreateWalletPaymentRequest input)
     {
+        var userId = _currentUserService.UserId;
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new InvalidOperationException("User not authenticated.");
+
+        var wallet = await _unitOfWork.Wallets.GetTableAsTracking().FirstOrDefaultAsync(w => w.UserId == userId);
+        if (wallet == null)
+        {
+            wallet = new Wallet
+            {
+                UserId = userId,
+                Balance = 0
+            };
+
+            await _unitOfWork.Wallets.AddAsync(wallet);
+            await _unitOfWork.CompeleteAsync();
+        }
+
         var auth = await AuthenticateAsync();
         var merchantOrderId = string.IsNullOrWhiteSpace(input.MerchantOrderId)
             ? Guid.NewGuid().ToString("N")
@@ -161,9 +178,22 @@ public class PaymobService : IPaymobService
             source = new { identifier = input.WalletMsisdn, subtype = "WALLET" },
             payment_token = payToken
         };
-        var res = await _http.PostAsJsonAsync($"{BaseUrl}/a cceptance/payments/pay", payBody);
+        var res = await _http.PostAsJsonAsync($"{BaseUrl}/acceptance/payments/pay", payBody);
         res.EnsureSuccessStatusCode();
         var json = await res.Content.ReadFromJsonAsync<WalletPayResponse>();
+
+        var walletTransaction = new WalletTransaction
+        {
+            WalletId = wallet.Id,
+            MerchantOrderId = merchantOrderId,
+            OrderId = orderId,
+            Amount = input.AmountCents / 100m,
+            CreatedAt = DateTime.UtcNow,
+            Status = "Pending",
+            Type = "Deposit"
+        };
+        await _unitOfWork.WalletTransactions.AddAsync(walletTransaction);
+        await _unitOfWork.CompeleteAsync();
 
         // بيكون فيه redirect_url (توجّه العميل عليه)
         return new WalletInitResponse { OrderId = orderId, PaymentToken = payToken, RedirectUrl = json!.redirect_url };
