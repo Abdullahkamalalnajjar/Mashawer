@@ -31,6 +31,7 @@
             public int AmountCents { get; set; }
             public string Currency { get; set; } = "EGP";
             public string WalletMsisdn { get; set; } = "01000000000"; // رقم المحفظة
+            public string? UserId { get; set; }
             public string? MerchantOrderId { get; set; }
             public PaymobBillingData Billing { get; set; } = new();
         }
@@ -39,6 +40,7 @@
         {
             public int AmountCents { get; set; }
             public string WalletMsisdn { get; set; } = "01000000000";
+            public string? UserId { get; set; }
         }
 
         public class CardInitResponse

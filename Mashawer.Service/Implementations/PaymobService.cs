@@ -147,9 +147,15 @@ public class PaymobService : IPaymobService
     // 4B) WALLET FLOW: إرجاع Redirect URL
     public async Task<WalletInitResponse> InitWalletPaymentAsync(CreateWalletPaymentRequest input)
     {
-        var userId = _currentUserService.UserId;
+        var userId = string.IsNullOrWhiteSpace(input.UserId)
+            ? _currentUserService.UserId
+            : input.UserId;
         if (string.IsNullOrWhiteSpace(userId))
             throw new InvalidOperationException("User not authenticated.");
+
+        var userExists = await _unitOfWork.Users.GetTableNoTracking().AnyAsync(u => u.Id == userId);
+        if (!userExists)
+            throw new InvalidOperationException($"User not found for id {userId}.");
 
         var wallet = await _unitOfWork.Wallets.GetTableAsTracking().FirstOrDefaultAsync(w => w.UserId == userId);
         if (wallet == null)

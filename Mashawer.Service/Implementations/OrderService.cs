@@ -169,6 +169,7 @@ namespace Mashawer.Service.Implementations
             var orders = await _unitOfWork.Orders.GetTableNoTracking()
                 .Include(o => o.Tasks)
                 .Where(o => o.Status == OrderStatus.Pending &&
+                            (o.PaymentMethod != PaymentMethod.Visa || o.PaymentStatus == PaymentStatus.Paid) &&
                             o.Tasks.Any(t =>
                                 t.FromLatitude >= minLat && t.FromLatitude <= maxLat &&
                                 t.FromLongitude >= minLng && t.FromLongitude <= maxLng))
@@ -232,20 +233,22 @@ namespace Mashawer.Service.Implementations
         }
         public async Task DeleteOrderAfterOneHour()
         {
-            // احسب الوقت قبل ساعة واحدة
             var oneHourAgo = DateTime.UtcNow.AddHours(-1);
 
-            // جلب الطلبات مباشرة من قاعدة البيانات باستخدام شرط قابل للترجمة
             var orders = await _unitOfWork.Orders.GetTableAsTracking()
-                .Where(o => o.Status == OrderStatus.Pending && o.CreatedAt <= oneHourAgo)
+                .Where(o => o.PaymentMethod == PaymentMethod.Visa &&
+                            o.PaymentStatus != PaymentStatus.Paid &&
+                            o.CreatedAt <= oneHourAgo)
                 .ToListAsync();
 
             foreach (var order in orders)
             {
-                await _unitOfWork.Orders.Delete(order);
-                await _unitOfWork.CompeleteAsync();
-
+                order.Status = OrderStatus.Cancelled;
+                order.PaymentStatus = PaymentStatus.Failed;
+                _unitOfWork.Orders.Update(order);
             }
+
+            await _unitOfWork.CompeleteAsync();
 
         }
 

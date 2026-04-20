@@ -75,7 +75,9 @@ namespace Mashawer.Api.Controllers
         [HttpPost("wallet/recharge")]
         public async Task<IActionResult> RechargeWalletByLocalWallet([FromBody] RechargeWalletByLocalWalletRequest req)
         {
-            var userId = _currentUserService.UserId;
+            var userId = string.IsNullOrWhiteSpace(req.UserId)
+                ? _currentUserService.UserId
+                : req.UserId;
             if (string.IsNullOrWhiteSpace(userId))
                 return Unauthorized("User not authenticated");
 
@@ -88,6 +90,7 @@ namespace Mashawer.Api.Controllers
                 AmountCents = req.AmountCents,
                 WalletMsisdn = req.WalletMsisdn,
                 Currency = "EGP",
+                UserId = userId,
                 Billing = new PaymobBillingData
                 {
                     FirstName = user.FirstName ?? "User",
@@ -364,6 +367,23 @@ namespace Mashawer.Api.Controllers
             else
             {
                 _logger.LogWarning("Webhook received but was not a successful transaction. Type: {Type}, Success: {Success}", payload.Type, payload.Obj.Success);
+
+                var merchantOrderId = payload.Obj?.Order?.MerchantOrderId;
+                if (int.TryParse(merchantOrderId, out var failedOrderId))
+                {
+                    var failedOrder = await _unitOfWork.Orders.GetTableAsTracking()
+                        .FirstOrDefaultAsync(o => o.Id == failedOrderId);
+
+                    if (failedOrder != null &&
+                        failedOrder.PaymentMethod == Mashawer.Data.Enums.PaymentMethod.Visa &&
+                        failedOrder.PaymentStatus != Mashawer.Data.Enums.PaymentStatus.Paid)
+                    {
+                        _logger.LogInformation("Cancelling unpaid Visa order {OrderId} after failed payment.", failedOrder.Id);
+                        failedOrder.Status = Mashawer.Data.Enums.OrderStatus.Cancelled;
+                        failedOrder.PaymentStatus = Mashawer.Data.Enums.PaymentStatus.Failed;
+                        await _unitOfWork.CompeleteAsync();
+                    }
+                }
             }
 
             return Ok(); // لازم ترجع 200 عشان Paymob يعتبر الـ Webhook ناجح
