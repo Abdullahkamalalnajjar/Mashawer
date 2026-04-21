@@ -94,6 +94,7 @@ namespace Mashawer.Core.Features.Orders.Commands.Handler
             }
             else if (request.PaymentMethod == PaymentMethod.Visa)
             {
+                order.Status = OrderStatus.Processing;
                 order.PaymentStatus = PaymentStatus.Pending;
             }
             else

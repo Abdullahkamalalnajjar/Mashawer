@@ -126,6 +126,7 @@ namespace Mashawer.Api.Controllers
 
                 using var doc = JsonDocument.Parse(body);
                 dict = FlattenJson(doc.RootElement);
+                NormalizePaymobFields(dict);
 
                 providedHmac = dict.TryGetValue("hmac", out var h) ? h : "";
             }
@@ -150,7 +151,14 @@ namespace Mashawer.Api.Controllers
             if (!ok)
                 return Unauthorized("Invalid HMAC");
 
-            // تحديث الطلب في قاعدة البيانات
+            var isSuccess = IsTruthy(GetPaymobValue(dict, "success", "obj.success"));
+            var merchantOrderId = GetPaymobValue(dict, "order.merchant_order_id", "obj.order.merchant_order_id");
+            var transactionId = GetPaymobValue(dict, "id", "obj.id");
+            var amountCentsRaw = GetPaymobValue(dict, "amount_cents", "obj.amount_cents");
+
+            if (isSuccess && decimal.TryParse(amountCentsRaw, out var amountCents))
+                await ProcessSuccessfulTransactionAsync(merchantOrderId, amountCents / 100m, transactionId);
+
             return Ok();
         }
 
@@ -187,6 +195,34 @@ namespace Mashawer.Api.Controllers
             return dict;
         }
 
+        private static void NormalizePaymobFields(IDictionary<string, string?> dict)
+        {
+            var prefixedKeys = dict.Keys
+                .Where(k => k.StartsWith("obj.", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            foreach (var key in prefixedKeys)
+            {
+                var normalizedKey = key[4..];
+                if (!dict.ContainsKey(normalizedKey))
+                    dict[normalizedKey] = dict[key];
+            }
+        }
+
+        private static string? GetPaymobValue(IReadOnlyDictionary<string, string?> dict, params string[] keys)
+        {
+            foreach (var key in keys)
+            {
+                if (dict.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value))
+                    return value;
+            }
+
+            return null;
+        }
+
+        private static bool IsTruthy(string? value) =>
+            string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
+
         // ✅ 4) (اختياري) Return URL بعد الكارد (لو حابب ترجّع المستخدم لصفحة شكراً)
         [HttpGet("return")]
         public IActionResult Return([FromQuery] Dictionary<string, string> qs)
@@ -218,6 +254,9 @@ namespace Mashawer.Api.Controllers
 
         public class PaymobObj
         {
+            [JsonPropertyName("id")]
+            public long Id { get; set; }
+
             [JsonPropertyName("success")]
             public bool Success { get; set; }
 
@@ -244,125 +283,13 @@ namespace Mashawer.Api.Controllers
         {
             _logger.LogInformation("Paymob webhook received: {Payload}", JsonSerializer.Serialize(payload));
 
-            if (payload.Type == "TRANSACTION" && payload.Obj.Success)
+            if (string.Equals(payload.Type, "TRANSACTION", StringComparison.OrdinalIgnoreCase) && payload.Obj.Success)
             {
                 _logger.LogInformation("Webhook is a successful transaction.");
                 var merchantOrderId = payload.Obj.Order.MerchantOrderId;
                 var amount = payload.Obj.AmountCents / 100m;
                 _logger.LogInformation("Parsed MerchantOrderId: {MerchantOrderId}, Amount: {Amount}", merchantOrderId, amount);
-
-                // 1) إذا كان هناك WalletTransaction مرتبط بالـ merchantOrderId حدّثه وزوّد رصيد المحفظة
-                var walletTransaction = await _unitOfWork.WalletTransactions.GetTableAsTracking()
-                    .FirstOrDefaultAsync(p => p.MerchantOrderId == merchantOrderId);
-
-                if (walletTransaction != null && walletTransaction.Status != "Paid")
-                {
-                    _logger.LogInformation("Found matching WalletTransaction with ID: {TransactionId}", walletTransaction.Id);
-                    walletTransaction.Status = "Paid";
-                    walletTransaction.PaidAt = DateTime.UtcNow;
-
-                    if (walletTransaction.Type == "Deposit")
-                    {
-                        var wallet = await _unitOfWork.Wallets.GetTableAsTracking()
-                            .FirstOrDefaultAsync(w => w.Id == walletTransaction.WalletId);
-
-                        if (wallet != null)
-                        {
-                            _logger.LogInformation("Updating wallet balance for wallet ID: {WalletId}. Old Balance: {OldBalance}, Amount: {Amount}", wallet.Id, wallet.Balance, amount);
-                            wallet.Balance += amount;
-                        }
-                    }
-
-                    await _unitOfWork.CompeleteAsync();
-                    _logger.LogInformation("WalletTransaction updated successfully.");
-                }
-
-                // 2) إذا كان merchantOrderId يمثل رقم الطلب في التطبيق (app order id)
-                if (int.TryParse(merchantOrderId, out var appOrderId))
-                {
-                    _logger.LogInformation("Successfully parsed MerchantOrderId as AppOrderId: {AppOrderId}", appOrderId);
-                    var order = await _unitOfWork.Orders.GetTableAsTracking()
-                        .FirstOrDefaultAsync(o => o.Id == appOrderId);
-
-                    if (order != null)
-                    {
-                        _logger.LogInformation("Found matching order with ID: {OrderId}", order.Id);
-                        var orderPrice = order.FinalPrice ?? 0m;
-
-                        // تأكد من أن المبلغ المدفوع يطابق سعر الطلب
-                        if (amount != orderPrice)
-                        {
-                            _logger.LogWarning("Paid amount ({PaidAmount}) does not match order final price ({OrderPrice}) for Order ID: {OrderId}", amount, orderPrice, order.Id);
-                            return BadRequest("Paid amount does not match order total price.");
-                        }
-
-                        // ضع حالة الدفع واحتفظ بمعرّف الـ transaction
-                        order.PaymentStatus = Mashawer.Data.Enums.PaymentStatus.Paid;
-                        order.PaymobTransactionId = payload.Obj.Order.Id.ToString();
-                        _logger.LogInformation("Updating order {OrderId} status to Paid.", order.Id);
-
-                        // إذا كان للطلب مندوب، اخصم 25% من رصيد المندوب
-                        if (!string.IsNullOrEmpty(order.DriverId))
-                        {
-                            _logger.LogInformation("Order {OrderId} has a driver. Calculating commission.", order.Id);
-                            var commission = orderPrice * 0.25m;
-
-                            var driverWallet = await _unitOfWork.Wallets.GetTableAsTracking()
-                                .FirstOrDefaultAsync(w => w.UserId == order.DriverId);
-
-                            if (driverWallet != null)
-                            {
-                                driverWallet.Balance -= commission;
-
-                                var driverTx = new WalletTransaction
-                                {
-                                    WalletId = driverWallet.Id,
-                                    Amount = commission,
-                                    Type = "Withdraw",
-                                    Status = "Paid",
-                                    PaidAt = DateTime.UtcNow,
-                                    OrderId = appOrderId
-                                };
-                                await _unitOfWork.WalletTransactions.AddAsync(driverTx);
-                            }
-                            else
-                            {
-                                 _logger.LogInformation("Driver {DriverId} does not have a wallet. Creating one.", order.DriverId);
-                                // 1. Create and save the new wallet
-                                var newWallet = new Mashawer.Data.Entities.Wallet
-                                {
-                                    UserId = order.DriverId,
-                                    Balance = -commission
-                                };
-                                await _unitOfWork.Wallets.AddAsync(newWallet);
-                                await _unitOfWork.CompeleteAsync(); // Save wallet to get its ID
-
-                                // 2. Create the transaction with the new WalletId
-                                var driverTx = new WalletTransaction
-                                {
-                                    WalletId = newWallet.Id, // Use the ID from the saved wallet
-                                    Amount = commission,
-                                    Type = "Withdraw",
-                                    Status = "Paid",
-                                    PaidAt = DateTime.UtcNow,
-                                    OrderId = appOrderId
-                                };
-                                await _unitOfWork.WalletTransactions.AddAsync(driverTx);
-                            }
-                        }
-
-                        await _unitOfWork.CompeleteAsync();
-                        _logger.LogInformation("Successfully updated order {OrderId} and related entities.", order.Id);
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Order not found for AppOrderId: {AppOrderId}", appOrderId);
-                    }
-                }
-                else
-                {
-                     _logger.LogWarning("Could not parse MerchantOrderId '{MerchantOrderId}' as an integer.", merchantOrderId);
-                }
+                await ProcessSuccessfulTransactionAsync(merchantOrderId, amount, payload.Obj.Id.ToString());
             }
             else
             {
@@ -387,6 +314,124 @@ namespace Mashawer.Api.Controllers
             }
 
             return Ok(); // لازم ترجع 200 عشان Paymob يعتبر الـ Webhook ناجح
+        }
+
+        private async Task ProcessSuccessfulTransactionAsync(string? merchantOrderId, decimal amount, string? paymobTransactionId)
+        {
+            if (string.IsNullOrWhiteSpace(merchantOrderId))
+            {
+                _logger.LogWarning("Skipping successful Paymob transaction because MerchantOrderId is missing.");
+                return;
+            }
+
+            var walletTransaction = await _unitOfWork.WalletTransactions.GetTableAsTracking()
+                .FirstOrDefaultAsync(p => p.MerchantOrderId == merchantOrderId);
+
+            if (walletTransaction != null && walletTransaction.Status != "Paid")
+            {
+                _logger.LogInformation("Found matching WalletTransaction with ID: {TransactionId}", walletTransaction.Id);
+                walletTransaction.Status = "Paid";
+                walletTransaction.PaidAt = DateTime.UtcNow;
+
+                if (string.Equals(walletTransaction.Type, "Deposit", StringComparison.OrdinalIgnoreCase))
+                {
+                    var wallet = await _unitOfWork.Wallets.GetTableAsTracking()
+                        .FirstOrDefaultAsync(w => w.Id == walletTransaction.WalletId);
+
+                    if (wallet != null)
+                    {
+                        _logger.LogInformation(
+                            "Updating wallet balance for wallet ID: {WalletId}. Old Balance: {OldBalance}, Amount: {Amount}",
+                            wallet.Id, wallet.Balance, amount);
+                        wallet.Balance += amount;
+                    }
+                }
+
+                await _unitOfWork.CompeleteAsync();
+                _logger.LogInformation("WalletTransaction updated successfully.");
+            }
+
+            if (!int.TryParse(merchantOrderId, out var appOrderId))
+            {
+                _logger.LogInformation("MerchantOrderId '{MerchantOrderId}' is not an app order id. Skipping order update.", merchantOrderId);
+                return;
+            }
+
+            _logger.LogInformation("Successfully parsed MerchantOrderId as AppOrderId: {AppOrderId}", appOrderId);
+            var order = await _unitOfWork.Orders.GetTableAsTracking()
+                .FirstOrDefaultAsync(o => o.Id == appOrderId);
+
+            if (order == null)
+            {
+                _logger.LogWarning("Order not found for AppOrderId: {AppOrderId}", appOrderId);
+                return;
+            }
+
+            _logger.LogInformation("Found matching order with ID: {OrderId}", order.Id);
+            var orderPrice = order.FinalPrice ?? 0m;
+
+            if (amount != orderPrice)
+            {
+                _logger.LogWarning(
+                    "Paid amount ({PaidAmount}) does not match order final price ({OrderPrice}) for Order ID: {OrderId}",
+                    amount, orderPrice, order.Id);
+                return;
+            }
+
+            order.PaymentStatus = Mashawer.Data.Enums.PaymentStatus.Paid;
+            order.Status = Mashawer.Data.Enums.OrderStatus.Pending;
+            order.PaymobTransactionId = paymobTransactionId ?? order.PaymobTransactionId;
+            _logger.LogInformation("Updating order {OrderId} status to Paid.", order.Id);
+
+            if (!string.IsNullOrEmpty(order.DriverId))
+            {
+                _logger.LogInformation("Order {OrderId} has a driver. Calculating commission.", order.Id);
+                var commission = orderPrice * 0.25m;
+
+                var driverWallet = await _unitOfWork.Wallets.GetTableAsTracking()
+                    .FirstOrDefaultAsync(w => w.UserId == order.DriverId);
+
+                if (driverWallet != null)
+                {
+                    driverWallet.Balance -= commission;
+
+                    var driverTx = new WalletTransaction
+                    {
+                        WalletId = driverWallet.Id,
+                        Amount = commission,
+                        Type = "Withdraw",
+                        Status = "Paid",
+                        PaidAt = DateTime.UtcNow,
+                        OrderId = appOrderId
+                    };
+                    await _unitOfWork.WalletTransactions.AddAsync(driverTx);
+                }
+                else
+                {
+                    _logger.LogInformation("Driver {DriverId} does not have a wallet. Creating one.", order.DriverId);
+                    var newWallet = new Mashawer.Data.Entities.Wallet
+                    {
+                        UserId = order.DriverId,
+                        Balance = -commission
+                    };
+                    await _unitOfWork.Wallets.AddAsync(newWallet);
+                    await _unitOfWork.CompeleteAsync();
+
+                    var driverTx = new WalletTransaction
+                    {
+                        WalletId = newWallet.Id,
+                        Amount = commission,
+                        Type = "Withdraw",
+                        Status = "Paid",
+                        PaidAt = DateTime.UtcNow,
+                        OrderId = appOrderId
+                    };
+                    await _unitOfWork.WalletTransactions.AddAsync(driverTx);
+                }
+            }
+
+            await _unitOfWork.CompeleteAsync();
+            _logger.LogInformation("Successfully updated order {OrderId} and related entities.", order.Id);
         }
 
 
