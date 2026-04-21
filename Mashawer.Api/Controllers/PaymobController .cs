@@ -112,31 +112,7 @@ namespace Mashawer.Api.Controllers
         [HttpPost("webhook")]
         public async Task<IActionResult> Webhook()
         {
-            Request.EnableBuffering();
-            string providedHmac;
-            Dictionary<string, string?> dict;
-
-            if (Request.ContentType != null &&
-                Request.ContentType.Contains("application/json", StringComparison.OrdinalIgnoreCase))
-            {
-                // قراءة JSON
-                using var reader = new StreamReader(Request.Body, Encoding.UTF8, leaveOpen: true);
-                var body = await reader.ReadToEndAsync();
-                Request.Body.Position = 0;
-
-                using var doc = JsonDocument.Parse(body);
-                dict = FlattenJson(doc.RootElement);
-                NormalizePaymobFields(dict);
-
-                providedHmac = dict.TryGetValue("hmac", out var h) ? h : "";
-            }
-            else
-            {
-                // قراءة form-urlencoded
-                var form = await Request.ReadFormAsync();
-                dict = form.ToDictionary(k => k.Key, v => v.Value.ToString());
-                providedHmac = dict.TryGetValue("hmac", out var h) ? h : "";
-            }
+            var (dict, providedHmac) = await ReadPaymobWebhookRequestAsync();
 
             // ترتيب الحقول حسب Documentation
             var order = new[]
@@ -160,6 +136,35 @@ namespace Mashawer.Api.Controllers
                 await ProcessSuccessfulTransactionAsync(merchantOrderId, amountCents / 100m, transactionId);
 
             return Ok();
+        }
+
+        private async Task<(Dictionary<string, string?> Data, string ProvidedHmac)> ReadPaymobWebhookRequestAsync()
+        {
+            Request.EnableBuffering();
+
+            Dictionary<string, string?> dict;
+            string providedHmac;
+
+            if (Request.ContentType != null &&
+                Request.ContentType.Contains("application/json", StringComparison.OrdinalIgnoreCase))
+            {
+                using var reader = new StreamReader(Request.Body, Encoding.UTF8, leaveOpen: true);
+                var body = await reader.ReadToEndAsync();
+                Request.Body.Position = 0;
+
+                using var doc = JsonDocument.Parse(body);
+                dict = FlattenJson(doc.RootElement);
+                NormalizePaymobFields(dict);
+                providedHmac = dict.TryGetValue("hmac", out var h) ? h ?? string.Empty : string.Empty;
+            }
+            else
+            {
+                var form = await Request.ReadFormAsync();
+                dict = form.ToDictionary(k => k.Key, v => (string?)v.Value.ToString());
+                providedHmac = dict.TryGetValue("hmac", out var h) ? h ?? string.Empty : string.Empty;
+            }
+
+            return (dict, providedHmac);
         }
 
         // دالة لفرد الـ JSON paths
@@ -279,23 +284,41 @@ namespace Mashawer.Api.Controllers
 
 
         [HttpPost("api/v1/paymob/webhook")]
-        public async Task<IActionResult> PaymobWebhook([FromBody] PaymobWebhookDto payload)
+        public async Task<IActionResult> PaymobWebhook()
         {
-            _logger.LogInformation("Paymob webhook received: {Payload}", JsonSerializer.Serialize(payload));
+            var (dict, providedHmac) = await ReadPaymobWebhookRequestAsync();
+            _logger.LogInformation("Paymob webhook received: {Payload}", JsonSerializer.Serialize(dict));
 
-            if (string.Equals(payload.Type, "TRANSACTION", StringComparison.OrdinalIgnoreCase) && payload.Obj.Success)
+            var order = new[]
+            {
+                "amount_cents","created_at","currency","error_occured","has_parent_transaction","id",
+                "integration_id","is_3d_secure","is_auth","is_capture","is_refunded","is_standalone_payment",
+                "is_voided","order.id","owner","pending","source_data.pan","source_data.sub_type",
+                "source_data.type","success"
+            };
+
+            var ok = _paymob.VerifyHmac(dict, providedHmac, order);
+            if (!ok)
+                return Unauthorized("Invalid HMAC");
+
+            var type = GetPaymobValue(dict, "type");
+            var isSuccess = IsTruthy(GetPaymobValue(dict, "success", "obj.success"));
+            var merchantOrderId = GetPaymobValue(dict, "order.merchant_order_id", "obj.order.merchant_order_id");
+            var transactionId = GetPaymobValue(dict, "id", "obj.id");
+            var amountCentsRaw = GetPaymobValue(dict, "amount_cents", "obj.amount_cents");
+
+            if (string.Equals(type, "TRANSACTION", StringComparison.OrdinalIgnoreCase) &&
+                isSuccess &&
+                decimal.TryParse(amountCentsRaw, out var amountCents))
             {
                 _logger.LogInformation("Webhook is a successful transaction.");
-                var merchantOrderId = payload.Obj.Order.MerchantOrderId;
-                var amount = payload.Obj.AmountCents / 100m;
-                _logger.LogInformation("Parsed MerchantOrderId: {MerchantOrderId}, Amount: {Amount}", merchantOrderId, amount);
-                await ProcessSuccessfulTransactionAsync(merchantOrderId, amount, payload.Obj.Id.ToString());
+                _logger.LogInformation("Parsed MerchantOrderId: {MerchantOrderId}, Amount: {Amount}", merchantOrderId, amountCents / 100m);
+                await ProcessSuccessfulTransactionAsync(merchantOrderId, amountCents / 100m, transactionId);
             }
             else
             {
-                _logger.LogWarning("Webhook received but was not a successful transaction. Type: {Type}, Success: {Success}", payload.Type, payload.Obj.Success);
+                _logger.LogWarning("Webhook received but was not a successful transaction. Type: {Type}, Success: {Success}", type, isSuccess);
 
-                var merchantOrderId = payload.Obj?.Order?.MerchantOrderId;
                 if (int.TryParse(merchantOrderId, out var failedOrderId))
                 {
                     var failedOrder = await _unitOfWork.Orders.GetTableAsTracking()
