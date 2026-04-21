@@ -123,22 +123,31 @@ public class PaymobService : IPaymobService
         }
 
         var auth = await AuthenticateAsync();
-        var merchantOrderId = Guid.NewGuid().ToString("N");
+        var merchantOrderId = string.IsNullOrWhiteSpace(input.MerchantOrderId)
+            ? Guid.NewGuid().ToString("N")
+            : input.MerchantOrderId;
+        var isOrderPayment = int.TryParse(merchantOrderId, out _);
 
         var orderId = await CreateOrderAsync(auth, input.AmountCents, "EGP", merchantOrderId);
         var payToken = await CreatePaymentKeyAsync(auth, orderId, input.AmountCents, "EGP", billing, CardIntegrationId);
         var iframeUrl = $"{BaseUrl}/acceptance/iframes/{IFrameId}?payment_token={payToken}";
-        var walletTransaction = new WalletTransaction
+
+        if (!isOrderPayment)
         {
-            WalletId = wallet.Id,
-            MerchantOrderId = merchantOrderId,
-            OrderId = orderId,
-            Amount = input.AmountCents / 100m,
-            CreatedAt = DateTime.UtcNow,
-            Status = "Pending",
-            Type = "Deposit"
-        };
-        await _unitOfWork.WalletTransactions.AddAsync(walletTransaction);
+            var walletTransaction = new WalletTransaction
+            {
+                WalletId = wallet.Id,
+                MerchantOrderId = merchantOrderId,
+                OrderId = orderId,
+                Amount = input.AmountCents / 100m,
+                CreatedAt = DateTime.UtcNow,
+                Status = "Pending",
+                Type = "Deposit"
+            };
+
+            await _unitOfWork.WalletTransactions.AddAsync(walletTransaction);
+        }
+
         await _unitOfWork.CompeleteAsync();
         
         return new CardInitResponse { OrderId = orderId, PaymentToken = payToken, IframeUrl = iframeUrl };

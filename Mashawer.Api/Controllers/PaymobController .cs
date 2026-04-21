@@ -4,6 +4,7 @@ using Mashawer.Service.Abstracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -19,13 +20,20 @@ namespace Mashawer.Api.Controllers
         private readonly ICurrentUserService _currentUserService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<PaymobController> _logger;
+        private readonly string _walletIntegrationId;
 
-        public PaymobController(PaymobService paymob, ICurrentUserService currentUserService, IUnitOfWork unitOfWork, ILogger<PaymobController> logger)
+        public PaymobController(
+            PaymobService paymob,
+            ICurrentUserService currentUserService,
+            IUnitOfWork unitOfWork,
+            ILogger<PaymobController> logger,
+            IConfiguration configuration)
         {
             _paymob = paymob;
             _currentUserService = currentUserService;
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _walletIntegrationId = configuration["Paymob:WalletIntegrationId"] ?? string.Empty;
         }
 
         // ✅ (اختياري) فحص سريع للـ Auth
@@ -110,33 +118,13 @@ namespace Mashawer.Api.Controllers
             return Ok(result);
         }
         [HttpPost("webhook")]
-        public async Task<IActionResult> Webhook()
-        {
-            var (dict, providedHmac) = await ReadPaymobWebhookRequestAsync();
+        public Task<IActionResult> Webhook() => HandlePaymobWebhookAsync();
 
-            // ترتيب الحقول حسب Documentation
-            var order = new[]
-            {
-        "amount_cents","created_at","currency","error_occured","has_parent_transaction","id",
-        "integration_id","is_3d_secure","is_auth","is_capture","is_refunded","is_standalone_payment",
-        "is_voided","order.id","owner","pending","source_data.pan","source_data.sub_type",
-        "source_data.type","success"
-    };
+        [HttpPost("wallet/webhook")]
+        public Task<IActionResult> WalletWebhook() => HandlePaymobWebhookAsync(expectedIntegrationId: _walletIntegrationId);
 
-            var ok = _paymob.VerifyHmac(dict, providedHmac, order);
-            if (!ok)
-                return Unauthorized("Invalid HMAC");
-
-            var isSuccess = IsTruthy(GetPaymobValue(dict, "success", "obj.success"));
-            var merchantOrderId = GetPaymobValue(dict, "order.merchant_order_id", "obj.order.merchant_order_id");
-            var transactionId = GetPaymobValue(dict, "id", "obj.id");
-            var amountCentsRaw = GetPaymobValue(dict, "amount_cents", "obj.amount_cents");
-
-            if (isSuccess && decimal.TryParse(amountCentsRaw, out var amountCents))
-                await ProcessSuccessfulTransactionAsync(merchantOrderId, amountCents / 100m, transactionId);
-
-            return Ok();
-        }
+        [HttpPost("api/v1/paymob/wallet/webhook")]
+        public Task<IActionResult> PaymobWalletWebhook() => HandlePaymobWebhookAsync(expectedIntegrationId: _walletIntegrationId);
 
         private async Task<(Dictionary<string, string?> Data, string ProvidedHmac)> ReadPaymobWebhookRequestAsync()
         {
@@ -284,7 +272,9 @@ namespace Mashawer.Api.Controllers
 
 
         [HttpPost("api/v1/paymob/webhook")]
-        public async Task<IActionResult> PaymobWebhook()
+        public Task<IActionResult> PaymobWebhook() => HandlePaymobWebhookAsync();
+
+        private async Task<IActionResult> HandlePaymobWebhookAsync(string? expectedIntegrationId = null)
         {
             var (dict, providedHmac) = await ReadPaymobWebhookRequestAsync();
             _logger.LogInformation("Paymob webhook received: {Payload}", JsonSerializer.Serialize(dict));
@@ -306,9 +296,20 @@ namespace Mashawer.Api.Controllers
             var merchantOrderId = GetPaymobValue(dict, "order.merchant_order_id", "obj.order.merchant_order_id");
             var transactionId = GetPaymobValue(dict, "id", "obj.id");
             var amountCentsRaw = GetPaymobValue(dict, "amount_cents", "obj.amount_cents");
+            var integrationId = GetPaymobValue(dict, "integration_id", "obj.integration_id");
 
-            if (string.Equals(type, "TRANSACTION", StringComparison.OrdinalIgnoreCase) &&
-                isSuccess &&
+            if (!string.IsNullOrWhiteSpace(expectedIntegrationId) &&
+                !string.IsNullOrWhiteSpace(integrationId) &&
+                !string.Equals(integrationId, expectedIntegrationId, StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning(
+                    "Ignoring Paymob webhook because integration id {IntegrationId} does not match expected integration id {ExpectedIntegrationId}.",
+                    integrationId,
+                    expectedIntegrationId);
+                return Ok();
+            }
+
+            if (isSuccess &&
                 decimal.TryParse(amountCentsRaw, out var amountCents))
             {
                 _logger.LogInformation("Webhook is a successful transaction.");
