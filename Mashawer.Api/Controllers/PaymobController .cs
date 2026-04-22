@@ -132,12 +132,14 @@ namespace Mashawer.Api.Controllers
 
             Dictionary<string, string?> dict;
             string providedHmac;
+            string? rawBody = null;
 
             if (Request.ContentType != null &&
                 Request.ContentType.Contains("application/json", StringComparison.OrdinalIgnoreCase))
             {
                 using var reader = new StreamReader(Request.Body, Encoding.UTF8, leaveOpen: true);
                 var body = await reader.ReadToEndAsync();
+                rawBody = body;
                 Request.Body.Position = 0;
 
                 using var doc = JsonDocument.Parse(body);
@@ -150,7 +152,21 @@ namespace Mashawer.Api.Controllers
                 var form = await Request.ReadFormAsync();
                 dict = form.ToDictionary(k => k.Key, v => (string?)v.Value.ToString());
                 providedHmac = dict.TryGetValue("hmac", out var h) ? h ?? string.Empty : string.Empty;
+                rawBody = string.Join("&", form.Select(kvp => $"{kvp.Key}={kvp.Value}"));
             }
+
+            if (string.IsNullOrWhiteSpace(providedHmac) &&
+                Request.Query.TryGetValue("hmac", out var queryHmac))
+            {
+                providedHmac = queryHmac.ToString();
+            }
+
+            _logger.LogInformation(
+                "Paymob webhook request details. Path: {Path}, ContentType: {ContentType}, Query: {Query}, RawBody: {RawBody}",
+                Request.Path,
+                Request.ContentType,
+                Request.QueryString.Value,
+                rawBody);
 
             return (dict, providedHmac);
         }
@@ -269,8 +285,6 @@ namespace Mashawer.Api.Controllers
             public string MerchantOrderId { get; set; }
         }
 
-
-
         [HttpPost("api/v1/paymob/webhook")]
         public Task<IActionResult> PaymobWebhook() => HandlePaymobWebhookAsync();
 
@@ -289,14 +303,39 @@ namespace Mashawer.Api.Controllers
 
             var ok = _paymob.VerifyHmac(dict, providedHmac, order);
             if (!ok)
+            {
+                _logger.LogWarning(
+                    "Paymob webhook rejected بسبب HMAC. Path: {Path}, ProvidedHmac: {ProvidedHmac}, MerchantOrderId: {MerchantOrderId}, IntegrationId: {IntegrationId}",
+                    Request.Path,
+                    providedHmac,
+                    GetPaymobValue(dict, "order.merchant_order_id", "obj.order.merchant_order_id"),
+                    GetPaymobValue(dict, "integration_id", "obj.integration_id"));
                 return Unauthorized("Invalid HMAC");
+            }
 
             var type = GetPaymobValue(dict, "type");
+            if (string.Equals(type, "TOKEN", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogInformation("Ignoring Paymob TOKEN webhook because it does not represent a completed payment transaction.");
+                return Ok();
+            }
+
             var isSuccess = IsTruthy(GetPaymobValue(dict, "success", "obj.success"));
             var merchantOrderId = GetPaymobValue(dict, "order.merchant_order_id", "obj.order.merchant_order_id");
             var transactionId = GetPaymobValue(dict, "id", "obj.id");
             var amountCentsRaw = GetPaymobValue(dict, "amount_cents", "obj.amount_cents");
             var integrationId = GetPaymobValue(dict, "integration_id", "obj.integration_id");
+            var paymobOrderIdRaw = GetPaymobValue(dict, "order.id", "obj.order.id");
+
+            _logger.LogInformation(
+                "Paymob webhook parsed values. Path: {Path}, Type: {Type}, Success: {Success}, MerchantOrderId: {MerchantOrderId}, TransactionId: {TransactionId}, AmountCentsRaw: {AmountCentsRaw}, IntegrationId: {IntegrationId}",
+                Request.Path,
+                type,
+                isSuccess,
+                merchantOrderId,
+                transactionId,
+                amountCentsRaw,
+                integrationId);
 
             if (!string.IsNullOrWhiteSpace(expectedIntegrationId) &&
                 !string.IsNullOrWhiteSpace(integrationId) &&
@@ -314,11 +353,17 @@ namespace Mashawer.Api.Controllers
             {
                 _logger.LogInformation("Webhook is a successful transaction.");
                 _logger.LogInformation("Parsed MerchantOrderId: {MerchantOrderId}, Amount: {Amount}", merchantOrderId, amountCents / 100m);
-                await ProcessSuccessfulTransactionAsync(merchantOrderId, amountCents / 100m, transactionId);
+                await ProcessSuccessfulTransactionAsync(merchantOrderId, amountCents / 100m, transactionId, paymobOrderIdRaw);
             }
             else
             {
-                _logger.LogWarning("Webhook received but was not a successful transaction. Type: {Type}, Success: {Success}", type, isSuccess);
+                _logger.LogWarning(
+                    "Webhook received but was not processed as successful transaction. Path: {Path}, Type: {Type}, Success: {Success}, AmountCentsRaw: {AmountCentsRaw}, MerchantOrderId: {MerchantOrderId}",
+                    Request.Path,
+                    type,
+                    isSuccess,
+                    amountCentsRaw,
+                    merchantOrderId);
 
                 if (int.TryParse(merchantOrderId, out var failedOrderId))
                 {
@@ -340,7 +385,7 @@ namespace Mashawer.Api.Controllers
             return Ok(); // لازم ترجع 200 عشان Paymob يعتبر الـ Webhook ناجح
         }
 
-        private async Task ProcessSuccessfulTransactionAsync(string? merchantOrderId, decimal amount, string? paymobTransactionId)
+        private async Task ProcessSuccessfulTransactionAsync(string? merchantOrderId, decimal amount, string? paymobTransactionId, string? paymobOrderIdRaw)
         {
             if (string.IsNullOrWhiteSpace(merchantOrderId))
             {
@@ -350,6 +395,18 @@ namespace Mashawer.Api.Controllers
 
             var walletTransaction = await _unitOfWork.WalletTransactions.GetTableAsTracking()
                 .FirstOrDefaultAsync(p => p.MerchantOrderId == merchantOrderId);
+
+            if (walletTransaction == null &&
+                long.TryParse(paymobOrderIdRaw, out var paymobOrderId))
+            {
+                _logger.LogWarning(
+                    "No WalletTransaction found by MerchantOrderId {MerchantOrderId}. Trying fallback lookup by Paymob OrderId {PaymobOrderId}.",
+                    merchantOrderId,
+                    paymobOrderId);
+
+                walletTransaction = await _unitOfWork.WalletTransactions.GetTableAsTracking()
+                    .FirstOrDefaultAsync(p => p.OrderId == paymobOrderId);
+            }
 
             if (walletTransaction != null && walletTransaction.Status != "Paid")
             {
@@ -369,10 +426,28 @@ namespace Mashawer.Api.Controllers
                             wallet.Id, wallet.Balance, amount);
                         wallet.Balance += amount;
                     }
+                    else
+                    {
+                        _logger.LogWarning("Wallet not found for WalletTransaction {TransactionId} and WalletId {WalletId}.", walletTransaction.Id, walletTransaction.WalletId);
+                    }
                 }
 
                 await _unitOfWork.CompeleteAsync();
                 _logger.LogInformation("WalletTransaction updated successfully.");
+            }
+            else if (walletTransaction == null)
+            {
+                _logger.LogWarning(
+                    "No WalletTransaction matched successful Paymob transaction. MerchantOrderId: {MerchantOrderId}, PaymobOrderId: {PaymobOrderId}, Amount: {Amount}",
+                    merchantOrderId,
+                    paymobOrderIdRaw,
+                    amount);
+            }
+            else
+            {
+                _logger.LogInformation(
+                    "WalletTransaction {TransactionId} is already marked as Paid. Skipping duplicate wallet update.",
+                    walletTransaction.Id);
             }
 
             if (!int.TryParse(merchantOrderId, out var appOrderId))
